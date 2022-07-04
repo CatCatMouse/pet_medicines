@@ -1,0 +1,11 @@
+/.idea
+/.vscode
+*.log
+.env
+/runtime
+/resource
+.svn
+.DS_Store
+/dataBackUp
+/public/.htaccess
+/public/nginx.htaccess
