@@ -1,7 +1,7 @@
 <?php
 /**
- * Factories.php
- * Date: 2022-07-05 09:56:06
+ * Brands.php
+ * Date: 2022-07-05 16:52:36
  */
 
 namespace app\admin\page;
@@ -12,15 +12,14 @@ use sdModule\layui\lists\module\EventHandle;
 use sdModule\layui\lists\PageData;
 use sdModule\layui\form4\FormProxy as Form;
 use sdModule\layui\form4\FormUnit;
-use app\common\enum\FactoriesEnumStatus;
 
 
 /**
- * 厂商表
- * Class FactoriesPage
- * @package app\admin\page\FactoriesPage
+ * 品牌表
+ * Class BrandsPage
+ * @package app\admin\page\BrandsPage
  */
-class FactoriesPage extends BasePage
+class BrandsPage extends BasePage
 {
     /**
      * 获取创建列表table的数据
@@ -32,15 +31,10 @@ class FactoriesPage extends BasePage
         $table = PageData::create([
             Column::checkbox(),
             Column::normal('', 'id'),
-            Column::normal('厂商名称', 'name'),
-            Column::normal('地址', 'address'),
-            Column::normal('经度', 'lng'),
-            Column::normal('纬度', 'lat'),
-            Column::normal('联系方式', 'phone'),
-            Column::normal('状态', 'status'),
-            Column::normal('创建时间', 'create_time'),
-    //            Column::normal('', 'update_time'),
-    //            Column::normal('', 'delete_time'),
+            Column::normal('品牌名', 'name'),
+//            Column::normal('', 'create_time'),
+//            Column::normal('', 'update_time'),
+//            Column::normal('', 'delete_time'),
         ]);
 
         // 更多处理事件及其他设置，$table->setHandleAttr() 可设置操作栏的属性
@@ -58,10 +52,7 @@ class FactoriesPage extends BasePage
     {
         $unit = [
             FormUnit::hidden('id'),
-            FormUnit::text('name', '厂商名称'),
-            FormUnit::text('address', '地址'),
-            FormUnit::text('phone', '联系方式'),
-            FormUnit::radio('status', '状态')->options(FactoriesEnumStatus::getMap(true)),
+            FormUnit::text('name', '品牌名'),
         ];
 
         $form = Form::create($unit, $default_data)->setScene($scene);
@@ -78,7 +69,7 @@ class FactoriesPage extends BasePage
     {
         $form_data = [
             FormUnit::group(
-                FormUnit::text('i.name%%')->placeholder('厂商名称'),
+                FormUnit::text('i.name%%')->placeholder('品牌名'),
             ),
         ];
         

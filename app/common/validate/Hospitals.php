@@ -29,7 +29,7 @@ class Hospitals extends BaseValidate
     ];
 
     protected $scene = [
-        'create' => ['name', 'contact_name', 'contact_phone', 'address', 'desc', 'status', 'audit_id', 'operate_id'],
-        'update' => ['id', 'name', 'contact_name', 'contact_phone', 'address', 'desc', 'status', 'audit_id', 'operate_id'],
+        'create' => ['name', 'contact_name', 'contact_phone', 'address', 'desc', 'status', ],
+        'update' => ['id', 'name', 'contact_name', 'contact_phone', 'address', 'desc', 'status', ],
     ];
 }

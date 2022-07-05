@@ -33,7 +33,7 @@ class HospitalsPage extends BasePage
     {
         $table = PageData::create([
             Column::checkbox(),
-            Column::normal('', 'id'),
+            Column::normal('ID', 'id'),
             Column::normal('医院名称', 'name'),
             Column::normal('联系人', 'contact_name'),
             Column::normal('联系电话', 'contact_phone'),
@@ -41,11 +41,11 @@ class HospitalsPage extends BasePage
             Column::normal('经度', 'lng'),
             Column::normal('纬度', 'lat'),
             Column::normal('状态', 'status'),
-            Column::normal('审核人id', 'administrators_name'),
-            Column::normal('申请人id', 'user_name'),
-            Column::normal('', 'create_time'),
-            Column::normal('', 'update_time'),
-            Column::normal('', 'delete_time'),
+//            Column::normal('审核人id', 'administrators_name'),
+//            Column::normal('申请人id', 'user_name'),
+            Column::normal('创建时间', 'create_time'),
+//            Column::normal('', 'update_time'),
+//            Column::normal('', 'delete_time'),
         ]);
 
         // 更多处理事件及其他设置，$table->setHandleAttr() 可设置操作栏的属性
@@ -69,8 +69,8 @@ class HospitalsPage extends BasePage
             FormUnit::text('address', '地址'),
             FormUnit::uEditor('desc', '合作内容'),
             FormUnit::radio('status', '状态')->options(HospitalsEnumStatus::getMap(true)),
-            FormUnit::text('audit_id', '审核人id')->options(Administrators::column('name', 'id')),
-            FormUnit::text('operate_id', '申请人id')->options(User::column('name', 'id')),
+//            FormUnit::text('audit_id', '审核人id')->options(Administrators::column('name', 'id')),
+//            FormUnit::text('operate_id', '申请人id')->options(User::column('name', 'id')),
         ];
 
         $form = Form::create($unit, $default_data)->setScene($scene);
