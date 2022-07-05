@@ -104,7 +104,7 @@ CODE;
             if ($item['join'] && is_array($item['join'])){
                 $field       = parse_name($field, 1);
                 $this->useAdd($this->CURD->getNamespace($this->CURD->config('namespace.enum')) . "\\{$this->replace['Table']}Enum$field");
-                $select_data = "->options({$this->replace['Table']}Enum$field::getAllMap(true))";
+                $select_data = "->options({$this->replace['Table']}Enum$field::getMap(true))";
             }elseif (in_array($type, ['date', 'time', 'month', 'range'])){
                 $select_data = $type === 'range' ? "->dateType('date', '~')" : "->dateType('$type')";
                 $type        = 'time';
