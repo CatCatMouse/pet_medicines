@@ -56,11 +56,16 @@ class User
         if (empty($params['code'])) {
             return '请授权登录';
         }
-
-        $openId = (new appLetLogin())->getUserOpenid($params['code']);
-        if (empty($openId)) {
-            return '参数错误';
+        $dev = intval($params['dev'] ?? 0);
+        if (!!env('app_debug', false) && 1 === $dev) {
+            $openId = $params['openId'];
+        } else {
+            $openId = (new appLetLogin())->getUserOpenid($params['code']);
+            if (empty($openId)) {
+                return '参数错误';
+            }
         }
+
 
         $user = Db::name(static::$table_name)->where('wx_openid', $openId)->find();
 
