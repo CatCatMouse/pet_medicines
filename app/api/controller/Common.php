@@ -48,11 +48,6 @@ class Common extends Api
 
     public function getToken()
     {
-//        Log::write('hahahah');
-        Log::error('hahahah');
-        Log::sql('asdasdasd');
-        Log::info('asdasdasd');
-        Log::alert('asdasdasd');
         return ResponseJson::success(Sc::jwt(['id' => 1])->getRefresh(10)->getToken());
     }
 }

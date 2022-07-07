@@ -7,6 +7,7 @@
 namespace weChat\appLet;
 
 
+use weChat\common\AccessToken;
 use weChat\common\Config;
 use weChat\common\Helper;
 
@@ -16,6 +17,7 @@ class Login
      * 获取session_key的路径
      */
     private const URL = 'https://api.weixin.qq.com/sns/jscode2session?appid={APPID}&secret={SECRET}&js_code={JSCODE}&grant_type=authorization_code';
+    private const URL_PHONE = 'https://api.weixin.qq.com/wxa/business/getuserphonenumber?access_token={ACCESS_TOKEN}&code={CODE}';
 
     /**
      * 配置标签
@@ -65,9 +67,9 @@ class Login
             Helper::log("小程序登录错误信息：签名错误！");
             return [];
         }
-        $sessionKey     = base64_decode($sessionKeyData['session_key']);
-        $iv             = base64_decode($iv);
-        $encryptedData  = base64_decode($encryptedData);
+        $sessionKey = base64_decode($sessionKeyData['session_key']);
+        $iv = base64_decode($iv);
+        $encryptedData = base64_decode($encryptedData);
 
         $decryptData = openssl_decrypt($encryptedData, 'AES-128-CBC', $sessionKey, 1, $iv);
 
@@ -77,6 +79,29 @@ class Login
         }
         $data = json_decode($decryptData, JSON_UNESCAPED_UNICODE);
         return array_merge($data, $sessionKeyData);
+    }
+
+    /**
+     * 获取用户手机号
+     * @param string $code
+     * @return array|bool|mixed|string
+     */
+    public function getPhone(string $code)
+    {
+        $access_token = AccessToken::getAccessToken($this->config_tag);
+        if (empty($access_token)) {
+            return [];
+        }
+        $url = strtr(self::URL_PHONE, [
+            '{ACCESS_TOKEN}' => $access_token,
+            '{CODE}' => $code,
+        ]);
+        $result = Helper::getRequest($url);
+        if (!empty($result['errcode'])) {
+            Helper::log("小程序登录错误信息：{$result['errmsg']}");
+            return [];
+        }
+        return $result;
     }
 
     /**

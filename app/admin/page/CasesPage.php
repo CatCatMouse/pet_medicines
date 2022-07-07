@@ -42,13 +42,9 @@ class CasesPage extends BasePage
             Column::normal('病例分类', 'case_types_name'),
             Column::normal('病例科目', 'case_subjects_name'),
             Column::normal('品种', 'varieties_name'),
-            Column::normal('年龄', 'age_year')->setFormat(<<<Str
-    {age_year}岁{age_month}个月
-Str
-),
-            Column::normal('年龄', 'age_month'),
+            Column::normal('年龄', 'age_year')->setFormat('{age_year}岁{age_month}个月'),
             Column::normal('性别', 'sex'),
-            Column::normal('图片', 'imgs')->showImage(),
+            Column::normal('图片', 'imgs')->setTemplate('return custom.tableImageShow(obj.imgs.split(",")[0]);'),
             Column::normal('销售人', 'sale_name'),
             Column::normal('操作人', 'operate_name'),
             Column::normal('创建时间', 'create_time'),

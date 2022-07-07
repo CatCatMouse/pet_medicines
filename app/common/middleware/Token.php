@@ -9,6 +9,7 @@
 
 namespace app\common\middleware;
 
+use app\api\model\User;
 use app\common\ResponseJson;
 use sdModule\common\Sc;
 use think\Request;
@@ -84,7 +85,13 @@ class Token
 
         $this->paramDefine($request, $check);
 
+        $this->setUserInfo($request);
         return true;
+    }
+
+    protected function setUserInfo($request)
+    {
+        $request->userInfo = User::userInfo(intval($request->middleware('token.id', 0)));
     }
 
     /**

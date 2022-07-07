@@ -41,11 +41,11 @@
                 </div>
                 <div class="layui-form-item">
                     <label class="layui-icon layui-icon-username" for="username"></label>
-                    <input type="text" name="account" lay-verify="required" placeholder="{:lang('administrator.account')}" autocomplete="off" class="layui-input" value="<?= env('APP_DEBUG') ? 'admin' : '' ?>">
+                    <input type="text" name="account" lay-verify="required" placeholder="{:lang('administrator.account')}" autocomplete="off" class="layui-input" value="<?= env('APP_DEBUG') ? '' : '' ?>">
                 </div>
                 <div class="layui-form-item">
                     <label class="layui-icon layui-icon-password" for="password"></label>
-                    <input type="password" name="password" lay-verify="required" placeholder="{:lang('administrator.password')}" autocomplete="off" class="layui-input" value="<?= env('APP_DEBUG') ? '123456' : '' ?>">
+                    <input type="password" name="password" lay-verify="required" placeholder="{:lang('administrator.password')}" autocomplete="off" class="layui-input" value="<?= env('APP_DEBUG') ? '' : '' ?>">
                 </div>
                 <div class="layui-form-item">
                     <label class="layui-icon layui-icon-vercode" for="captcha"></label>
