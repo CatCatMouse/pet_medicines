@@ -9,10 +9,7 @@ class Auth
 {
     public function handle(Request $request, callable $callable)
     {
-
-        return ResponseJson::status404();
-
-
+        //return ResponseJson::status404();
         return $callable($request);
     }
 }

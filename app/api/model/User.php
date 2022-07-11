@@ -10,12 +10,17 @@
 namespace app\api\model;
 
 use sdModule\common\Sc;
+use think\Exception;
+use think\facade\Cache;
 use think\facade\Db;
 use weChat\appLet\Login as appLetLogin;
 
 class User
 {
     public static $table_name = 'user';
+    public static $table_doctor_application_name = 'user_doctor_applications';
+    public static $table_hospital_name = 'hospitals';
+    public static $table_collection_name = 'case_collections';
     protected static $withoutField = [
         'pid',
         'password',
@@ -37,8 +42,32 @@ class User
         if (empty($id)) {
             return [];
         }
-        $userInfo = Db::name(static::$table_name)->where('id', $id)->withoutField(static::$withoutField)->cache(random_int(10, 25))->find() ?? [];
-        return (array)$userInfo;
+        $cache_key = md5('user_info_' . $id);
+        if (1 > 2 && Cache::has($cache_key)) {
+            $userInfo = json_decode(Cache::get($cache_key), true) ?? [];
+        } else {
+            $userInfo = Db::name(static::$table_name)->where('id', $id)->withoutField(static::$withoutField)->find() ?? [];
+            if (!empty($userInfo)) {
+                switch ($userInfo['type']) {
+                    case 1: // 游客
+                        break;
+                    case 2: //销售 - 归属公司信息和管理医院信息
+                        $userInfo['hospital_info'] = Db::name('hospitals')->where('id', $userInfo['hospital_id'])->find() ?? [];
+                        $userInfo['factory_info'] = Db::name('factories')->where('id', $userInfo['factory_id'])->find() ?? [];
+                        break;
+                    case 3: // 医生 - 归属医院信息
+                        $userInfo['hospital_info'] = Db::name('user_doctor_applications')->where('user_id', $userInfo['id'])->where(['stauts' => 2])->find() ?? [];
+                        break;
+                    case 4: // 医院 - 医院信息
+                        $userInfo['hospital_info'] = Db::name('hospitals')->where('id', $userInfo['hospital_id'])->find() ?? [];
+                        break;
+                    default: // 其他
+                        break;
+                }
+            }
+            Cache::set($cache_key, json_encode($userInfo), random_int(15, 60));
+        }
+        return $userInfo;
     }
 
     /**
@@ -51,6 +80,14 @@ class User
         return Sc::jwt($params)->setExp(24 * 3600 * 7)->getRefresh()->getToken();
     }
 
+    /**
+     * 登录
+     * @param array $params
+     * @return array|array[]|string
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
+     */
     public static function login(array $params)
     {
         if (empty($params['code'])) {
@@ -91,46 +128,62 @@ class User
         return array_merge(static::getToken(['id' => $uid]), ['userinfo' => static::userInfo($uid)]);
     }
 
+    /**
+     * 更新用户微信昵称和头像
+     * @param array $params
+     * @return bool|string
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
+     */
     public static function updateUserInfo(array $params)
     {
+        if (false) {
+            $userInfo = (new appLetLogin())->getUserinfo(
+                $params['code'] ?? ''
+                , $params['rawData'] ?? ''
+                , $params['signature'] ?? ''
+                , $params['iv'] ?? ''
+                , $params['encryptedData'] ?? ''
+            );
+            if (empty($userInfo)) {
+                return '参数错误';
+            }
 
-        $userInfo = (new appLetLogin())->getUserinfo(
-            $params['code'] ?? ''
-            , $params['rawData'] ?? ''
-            , $params['signature'] ?? ''
-            , $params['iv'] ?? ''
-            , $params['encryptedData'] ?? ''
-        );
-        if (empty($userInfo)) {
-            return '参数错误';
+            /**
+             *  正确解析返回的数据格式
+             * {
+             * "openId": "OPENID",
+             * "nickName": "NICKNAME",
+             * "gender": GENDER,
+             * "city": "CITY",
+             * "province": "PROVINCE",
+             * "country": "COUNTRY",
+             * "avatarUrl": "AVATARURL",
+             * "unionId": "UNIONID",
+             * "watermark": {
+             * "appid":"APPID",
+             * "timestamp":TIMESTAMP
+             * }
+             * }
+             */
+
+            $user = Db::name(static::$table_name)->where('wx_openid', $userInfo['openId'])->find();
+            if (empty($user)) {
+                return '请先授权登录';
+            }
+
+            $nickname = $userInfo['nickName'];
+            $avatar = $userInfo['avatar'];
+        } else {
+            $nickname = $params['nickname'] ?? '';
+            $avatar = $params['avatar'] ?? '';
         }
 
-        /**
-         *  正确解析返回的数据格式
-         * {
-         * "openId": "OPENID",
-         * "nickName": "NICKNAME",
-         * "gender": GENDER,
-         * "city": "CITY",
-         * "province": "PROVINCE",
-         * "country": "COUNTRY",
-         * "avatarUrl": "AVATARURL",
-         * "unionId": "UNIONID",
-         * "watermark": {
-         * "appid":"APPID",
-         * "timestamp":TIMESTAMP
-         * }
-         * }
-         */
 
-        $user = Db::name(static::$table_name)->where('wx_openid', $userInfo['openId'])->find();
-        if (empty($user)) {
-            return '请先授权登录';
-        }
-
-        if (!Db::name(static::$table_name)->where('id', $user['id'])->update([
-            'nickName' => $userInfo['nickName'],
-            'avatar' => $userInfo['avatar'],
+        if (!Db::name(static::$table_name)->where('id', request()->userInfo['id'])->update([
+            'nickName' => $nickname,
+            'avatar' => $avatar,
             'update_time' => date('Y-m-d H:i:s'),
         ])) {
             return '系统繁忙';
@@ -138,6 +191,12 @@ class User
         return true;
     }
 
+    /**
+     * 更新用户微信绑定的手机号
+     * @param array $params
+     * @return bool|string
+     * @throws \think\db\exception\DbException
+     */
     public static function updateUserPhone(array $params)
     {
         $userPhone = (new appLetLogin())->getPhone($params['code'] ?? '');
@@ -169,5 +228,194 @@ class User
             return '系统繁忙';
         }
         return true;
+    }
+
+    /**
+     * 我的收藏
+     * @param array $params
+     * @return array
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
+     */
+    public static function myCollections(array $params): array
+    {
+        $where = [];
+        switch (request()->userInfo['type']) {
+            case 1:
+                $where = [
+                    ['c.is_top', '=', 1],
+                ];
+                break;
+            default:
+                break;
+        }
+        $field = "cc.id as collection_id,c.id,c.name,c.create_time,c.desc,c.imgs,1 as if_collection";
+        $order = 'cc.id desc';
+        $lists = Db::name(static::$table_collection_name)->alias('cc')
+            ->join('cases c', 'cc.case_id = c.id')
+            ->where($where)
+            ->page(intval($params['page'] ?? 1))
+            ->limit(intval($params['limit'] ?? 20))
+            ->fieldRaw($field)
+            ->orderRaw($order)
+            ->select()
+            ->toArray();
+        foreach ($lists as &$v) {
+            $v['imgs'] = explode(',', $v['imgs']);
+        }
+        return $lists;
+    }
+
+    /**
+     * 申请医生
+     * @param array $params
+     * @return bool|string
+     */
+    public static function doctorApply(array $params)
+    {
+        try {
+            Db::startTrans();
+            $user_id = request()->userInfo['id'];
+            $where = [
+                ['user_id', '=', $user_id],
+                ['status', '>', 0]
+            ];
+
+            $check_hospital = Db::name(static::$table_hospital_name)->where($where)->find();
+            if (!empty($check_hospital)) {
+                throw new Exception('您已提交过医院合作申请了');
+            }
+            $check = Db::name(static::$table_doctor_application_name)->where($where)->find();
+            if (!empty($check)) {
+                throw new Exception('请勿重复提交');
+            }
+            $date = date('Y-m-d H:i:s');
+            $insert = [
+                'user_id' => $user_id,
+                'user_name' => $params['user_name'],
+                'hospital_id' => $params['hospital_id'],
+                'department_id' => $params['department_id'],
+                'good_subjects' => $params['good_subjects'] ?? '',
+                'case_type_ids' => $params['case_type_ids'] ?? '',
+                'case_subject_ids' => $params['case_subject_ids'] ?? '',
+                'create_time' => $date,
+            ];
+
+            //垃圾数据清理
+            Db::name(static::$table_doctor_application_name)->where([
+                'user_id' => $user_id,
+                'status' => -1,
+            ])->delete(true);
+            Db::name(static::$table_hospital_name)->where([
+                'operate_id' => $user_id,
+                'status' => -1,
+            ])->delete(true);
+
+            if (!Db::name(static::$table_doctor_application_name)->insert($insert)) {
+                throw new Exception('系统繁忙');
+            }
+            Db::commit();
+        } catch (Exception $e) {
+            Db::rollback();
+            return $e->getMessage();
+        }
+        return true;
+    }
+
+    /**
+     * 申请医院合作
+     * @param array $params
+     * @return bool|string
+     */
+    public static function hospitalApply(array $params)
+    {
+        try {
+            Db::startTrans();
+            $user_id = request()->userInfo['id'];
+            $where = [
+                ['operate_id', '=', $user_id],
+                ['status', '>', 0]
+            ];
+            $check_hospital = Db::name(static::$table_hospital_name)->where($where)->find();
+            if (!empty($check_hospital)) {
+                throw new Exception('请勿重复提交');
+            }
+            $check = Db::name(static::$table_doctor_application_name)->where([
+                ['user_id', '=', $user_id],
+                ['status', '>', 0]
+            ])->find();
+
+            if (!empty($check)) {
+                throw new Exception('您已经提交过医生申请了');
+            }
+
+            $date = date('Y-m-d H:i:s');
+            $insert = [
+                'operate_id' => $user_id,
+                'name' => $params['name'],
+                'contact_name' => $params['contact_name'],
+                'contact_phone' => $params['contact_phone'],
+                'lng' => $params['lng'],
+                'lat' => $params['lat'],
+                'address' => $params['address'],
+                'desc' => $params['desc'],
+                'create_time' => $date,
+            ];
+
+            //垃圾数据清理
+            Db::name(static::$table_doctor_application_name)->where([
+                'user_id' => $user_id,
+                'status' => -1,
+            ])->delete(true);
+            Db::name(static::$table_hospital_name)->where([
+                'operate_id' => $user_id,
+                'status' => -1,
+            ])->delete(true);
+
+            if (!Db::name(static::$table_hospital_name)->insert($insert)) {
+                throw new Exception('系统繁忙');
+            }
+            Db::commit();
+        } catch (Exception $e) {
+            Db::rollback();
+            return $e->getMessage();
+        }
+        return true;
+    }
+
+    /**
+     * 医生申请列表
+     * @param array $params
+     * @return array
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
+     */
+    public static function doctorApplyLists(array $params): array
+    {
+        $where = [
+            ['a.hospital_id', '=', intval(request()->userInfo['hospital_id'] ?? 0)],
+            ['a.status', '=', 1],
+            ['u.status', '=', 1],
+        ];
+        $field = 'a.id,a.user_id,a.user_name,d.name as department_name,a.create_time';
+        $order = 'a.id desc';
+        $lists = Db::name(static::$table_doctor_application_name)->alias('a')
+            ->join('departments d', 'a.department_id = d.id')
+            ->join((static::$table_name) . ' u', 'a.user_id = u.id')
+            ->where($where)
+            ->field($field)
+            ->order($order)
+            ->page(intval($params['page'] ?? 1))
+            ->limit(intval($params['limit'] ?? 20))
+            ->select()
+            ->toArray();
+        return $lists;
+    }
+
+    public static function doctorApplyDetail(array $params): array
+    {
+
     }
 }

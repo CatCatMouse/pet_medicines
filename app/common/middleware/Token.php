@@ -72,7 +72,6 @@ class Token
         $check = $request->header('Refresh-Token', '')
             ? $this->update($request->header('Refresh-Token', ''), $request->header('Token', ''))
             : $this->verify($request->header('Token', ''));
-
         if (is_string($check)) {
             return ResponseJson::fail($check, 203);
         } elseif ($check === false) {

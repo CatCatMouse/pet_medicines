@@ -35,7 +35,7 @@ class ApparatusesPage extends BasePage
         $table = PageData::create([
             Column::checkbox(),
             Column::normal('ID', 'id'),
-            Column::normal('缩略图', 'thumbnail'),
+            Column::normal('缩略图', 'thumbnail')->showImage(),
             Column::normal('名称', 'name'),
             Column::normal('类型', 'type'),
             Column::normal('厂商id', 'factories_name'),
@@ -91,10 +91,10 @@ class ApparatusesPage extends BasePage
     {
         $form_data = [
             FormUnit::group(
-                FormUnit::text('i.name%%')->placeholder('名称'),
                 FormUnit::select('i.type')->placeholder('类型')->options(ApparatusesEnumType::getMap(true)),
-                FormUnit::text('factories.name%%')->placeholder('厂商id'),
-                FormUnit::text('brands.name%%')->placeholder('品牌id'),
+                FormUnit::select('i.factory_id')->options(Factories::column('name', 'id'))->placeholder('厂商'),
+                FormUnit::select('i.brand_id')->options(Brands::column('name', 'id'))->placeholder('品牌'),
+                FormUnit::text('i.name%%')->placeholder('名称'),
             ),
         ];
         
