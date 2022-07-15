@@ -28,22 +28,23 @@ class Apparatuses
     public static function lists(array $params): array
     {
         $where = [
-            'a.type' => 1,
-            'a.status' => 1,
-            'a.delete_time' => 0,
+            ['a.type' ,'=', 1 ],
+            ['a.status' ,'=', 1 ],
+            ['a.delete_time' ,'=', 0 ],
         ];
 
         if (in_array($params['is_top'] ?? -1, A_IsTop::getAll())) {
-            $where['a.is_top'] = $params['is_top'];
+            $where[] = ['a.is_top', '=', $params['is_top']];
         }
 
         if (!empty($params['type']) && in_array($params['type'], A_Type::getAll())) {
-            $where['a.type'] = $params['type'];
+            $where[] = ['a.type', '=', $params['type']];
         }
 
         if (!empty($params['search'])) {
-            $where['search'] = ['like', "%{$params['search']}%"];
+            $where[] = ['a.name', 'like', "%{$params['search']}%"];
         }
+
         $field = 'a.id,a.name,a.thumbnail,ifnull(b.name, "") as brand_name';
         $order = 'a.id desc';
         $lists = Db::name(static::$table_name)->alias('a')

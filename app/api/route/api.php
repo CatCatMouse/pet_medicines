@@ -27,6 +27,7 @@ Route::rule('apparatus/detail', 'Apparatuses/detail', 'POST'); /** 器械详情 
 
 /** 病例 */
 Route::rule('cases/lists', 'Cases/lists', 'POST'); /** 首页病例库列表 @see \app\api\controller\Cases::lists() */
+Route::rule('cases/detail', 'Cases/detail', 'POST'); /** 病例详情 @see \app\api\controller\Cases::detail() */
 Route::rule('cases/apparatus_cases', 'Cases/apparatus_cases', 'POST'); /** 器械相关病例列表 @see \app\api\controller\Cases::apparatus_cases() */
 
 
@@ -39,6 +40,8 @@ Route::rule('apply_hospital', 'User/hospitalApply', 'POST'); /** 申请医院合
 
 /** 通用 */
 Route::rule('my_collections', 'User/myCollections', 'POST'); /** 我的收藏 @see \app\api\controller\User::myCollections() */
+Route::rule('types', 'CaseTypes/map_list', 'POST'); /** 分类 @see \app\api\controller\CaseTypes::map_list() */
+Route::rule('subjects', 'CaseSubjects/map_list', 'POST'); /** 科目 @see \app\api\controller\CaseSubjects::map_list() */
 
 /** 医院申请页配置 */
 Route::rule('doctor_apply_configs', 'User/doctorApplyConfig', 'POST'); /** 医生审核列表 @see \app\api\controller\User::doctorApplyConfig() */

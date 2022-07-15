@@ -41,12 +41,20 @@ class Cases
             $where[] = ['c.hospital_id', '=', $params['hospital_id']];
         }
         /** 分类 */
-        if (is_array($params['case_type_id']) && !empty($params['case_type_id'])) {
-            $where[] = ['c.case_type_id', (count($params['case_type_id']) == 1) ? '=' : 'in', $params['case_type_id']];
+        if (!empty($params['case_type_id']) && is_array($params['case_type_id']) ) {
+            if (count($params['case_type_id']) == 1) {
+                $where[] = ['c.case_type_id', '=', $params['case_type_id'][0]];
+            } else {
+                $where[] = ['c.case_type_id', 'in', $params['case_type_id']];
+            }
         }
         /** 科目 */
-        if (is_array($params['case_subject_id']) && !empty($params['case_subject_id'])) {
-            $where[] = ['c.case_subject_id', (count($params['case_subject_id']) == 1) ? '=' : 'in', $params['case_subject_id']];
+        if (!empty($params['case_subject_id']) && is_array($params['case_subject_id'])) {
+            if (count($params['case_subject_id']) == 1) {
+                $where[] = ['c.case_subject_id', '=', $params['case_subject_id'][0]];
+            } else {
+                $where[] = ['c.case_subject_id', 'in', $params['case_subject_id']];
+            }
         }
         /** 品种 */
         if (!empty($params['variety_id'])) {
@@ -126,5 +134,42 @@ class Cases
         return $lists;
     }
 
+    public static function detail(array $params)
+    {
+        $uid = request()->userInfo['id'];
+        $where = [
+            ['c.id', '=', intval($params['id'] ?? 0)]
+        ];
+        /** 游客只能看推荐的 */
+        if(1 === request()->userInfo['type']) {
+            $where[] = ['c.is_top', '=', 1];
+        }
+        $field = "
+            c.id,c.name,c.create_time,c.desc,c.imgs,c.videos
+            ,if(cc.user_id = {$uid},true,false) as if_collection
+            ,ifnull(ct.name, '') as type_name
+            ,ifnull(cs.name, '') as subject_name
+            ,ifnull(v.name, '') as variety_name
+            ,concat(c.age_year,'岁',if(c.age_month = 0,'',concat(c.age_month,'个月'))) as age
+            ,if(c.sex=1,'公',if(c.sex=2,'母','未知')) as sex
+            ,c.desc
+        ";
 
+        $detail = Db::name(static::$table_name)->alias('c')
+                ->join('case_collections cc', 'c.id = cc.case_id and cc.user_id = ' . $uid, 'left')
+                ->join('case_types ct', 'c.case_type_id = ct.id', 'left')
+                ->join('case_subjects cs', 'c.case_subject_id = cs.id', 'left')
+                ->join('varieties v', 'c.variety_id = v.id', 'left')
+                ->where($where)
+                ->field($field)
+                ->find() ?? [];
+
+        if (!empty($detail)) {
+            $detail['imgs'] = array_filter(explode(',', $detail['imgs']));
+            $detail['videos'] = array_filter(explode(',', $detail['videos'] ??''));
+            $detail['operation_lists'] = CaseOperations::case_operations($detail['id']);
+        }
+
+        return $detail;
+    }
 }

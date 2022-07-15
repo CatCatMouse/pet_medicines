@@ -34,8 +34,24 @@ class Cases extends Api
         return RJ::success(CM::lists($params));
     }
 
+    /**
+     * 器械相关病例信息
+     * @return J
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
+     */
     public function apparatus_cases(): J
     {
         return RJ::success(CM::apparatus_cases($this->request->post()));
+    }
+
+    /**
+     * 病例详情
+     * @return J
+     */
+    public function detail(): J
+    {
+        return RJ::success(CM::detail($this->request->post()));
     }
 }
