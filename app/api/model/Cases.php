@@ -11,7 +11,7 @@ namespace app\api\model;
 
 use app\common\enum\CasesIsTop as C_IsTop;
 use think\facade\Db;
-
+use app\common\enum\UserEnumType as T;
 class Cases
 {
     public static $table_name = 'cases';
@@ -141,7 +141,7 @@ class Cases
             ['c.id', '=', intval($params['id'] ?? 0)]
         ];
         /** 游客只能看推荐的 */
-        if(1 === request()->userInfo['type']) {
+        if(T::YOUKE === request()->userInfo['type']) {
             $where[] = ['c.is_top', '=', 1];
         }
         $field = "

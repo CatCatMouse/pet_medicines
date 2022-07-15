@@ -19,6 +19,7 @@ use app\common\controller\Api;
 use think\response\Json as J;
 use app\common\ResponseJson as RJ;
 use app\api\model\User as U;
+use app\common\enum\UserEnumType as T;
 
 class User extends Api
 {
@@ -58,6 +59,19 @@ class User extends Api
     }
 
     /**
+     * 加入/取消收藏
+     * @return J
+     */
+    public function joinCollection(): J
+    {
+        $res = U::joinCollection($this->request->post());
+        if (true !== $res) {
+            return RJ::fail($res ?: '操作失败');
+        }
+        return RJ::success([], '操作成功');
+    }
+
+    /**
      * 我的收藏
      * @return J
      */
@@ -65,7 +79,6 @@ class User extends Api
     {
         return RJ::success(U::myCollections($this->request->post()));
     }
-
 
     /**
      * 医生申请配置信息
@@ -89,7 +102,7 @@ class User extends Api
      */
     public function doctorApply(UserValidate $va): J
     {
-        if ($this->request->userInfo['type'] !== 1) { // 非游客不可申请
+        if ($this->request->userInfo['type'] !== T::YOUKE) { // 非游客不可申请
             return RJ::fail('非法操作');
         }
 
@@ -107,10 +120,14 @@ class User extends Api
 
     }
 
-
+    /**
+     * 医院合作
+     * @param HospitalValidate $va
+     * @return J
+     */
     public function hospitalApply(HospitalValidate $va): J
     {
-        if ($this->request->userInfo['type'] !== 1) { // 非游客不可申请
+        if ($this->request->userInfo['type'] !== T::YOUKE) { // 非游客不可申请
             return RJ::fail('非法操作');
         }
 
@@ -127,17 +144,41 @@ class User extends Api
         return RJ::success([], '申请成功');
     }
 
-
     /**
      * 医生申请列表
      * @return J
      */
     public function doctorApplyLists(): J
     {
-        if ($this->request->userInfo['type'] !== 4) { // 非医院不可查看
-            return RJ::fail('您不是医院账户,非法操作');
+        if (!in_array($this->request->userInfo['type'], [T::XIAOSHOU, T::YIYUAN])) {
+            return RJ::fail('您无操作权限');
         }
         return RJ::success(U::doctorApplyLists($this->request->post()));
+    }
+
+    /**
+     * 医生申请详情表
+     * @return J
+     */
+    public function doctorApplyDetail(): J
+    {
+        return RJ::success(U::doctorApplyDetail($this->request->post()));
+    }
+
+    /**
+     * 医生申请详情表
+     * @return J
+     */
+    public function auditDoctor(): J
+    {
+        if (!in_array($this->request->userInfo['type'], [T::XIAOSHOU, T::YIYUAN])) {
+            return RJ::fail('您无操作权限');
+        }
+        $res = U::auditDoctor($this->request->post());
+        if (true !== $res) {
+            return RJ::fail($res ?: '操作失败');
+        }
+        return RJ::success([], '操作成功');
     }
 
 

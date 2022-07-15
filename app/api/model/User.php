@@ -14,6 +14,7 @@ use think\Exception;
 use think\facade\Cache;
 use think\facade\Db;
 use weChat\appLet\Login as appLetLogin;
+use app\common\enum\UserEnumType as T;
 
 class User
 {
@@ -49,16 +50,16 @@ class User
             $userInfo = Db::name(static::$table_name)->where('id', $id)->withoutField(static::$withoutField)->find() ?? [];
             if (!empty($userInfo)) {
                 switch ($userInfo['type']) {
-                    case 1: // 游客
+                    case T::YOUKE: // 游客
                         break;
-                    case 2: //销售 - 归属公司信息和管理医院信息
+                    case T::XIAOSHOU: //销售 - 归属公司信息和管理医院信息
                         $userInfo['hospital_info'] = Db::name('hospitals')->where('id', $userInfo['hospital_id'])->find() ?? [];
                         $userInfo['factory_info'] = Db::name('factories')->where('id', $userInfo['factory_id'])->find() ?? [];
                         break;
-                    case 3: // 医生 - 归属医院信息
-                        $userInfo['hospital_info'] = Db::name('user_doctor_applications')->where('user_id', $userInfo['id'])->where(['stauts' => 2])->find() ?? [];
+                    case T::YISHENG: // 医生 - 归属医院信息
+                        $userInfo['hospital_info'] = Db::name('user_doctor_applications')->where('user_id', $userInfo['id'])->where(['status' => 2])->find() ?? [];
                         break;
-                    case 4: // 医院 - 医院信息
+                    case T::YIYUAN: // 医院 - 医院信息
                         $userInfo['hospital_info'] = Db::name('hospitals')->where('id', $userInfo['hospital_id'])->find() ?? [];
                         break;
                     default: // 其他
@@ -182,7 +183,7 @@ class User
 
 
         if (!Db::name(static::$table_name)->where('id', request()->userInfo['id'])->update([
-            'nickName' => $nickname,
+            'nickname' => $nickname,
             'avatar' => $avatar,
             'update_time' => date('Y-m-d H:i:s'),
         ])) {
@@ -268,6 +269,44 @@ class User
     }
 
     /**
+     * 加入/取消收藏
+     * @param array $params
+     * @return bool|string
+     */
+    public static function joinCollection(array $params)
+    {
+        $uid = request()->userInfo['id'];
+        $case_id = intval($params['case_id'] ?? 0);
+        $date = date('Y-m-d H:i:s');
+        if (empty($case_id)) {
+            return false;
+        }
+        $check = Db::name(static::$table_collection_name)->where([
+            'user_id' => $uid,
+            'case_id' => $case_id
+        ])->find();
+
+        if (empty($check)) {
+            $insert = [
+                'user_id' => $uid,
+                'case_id' => $case_id,
+                'create_time' => $date,
+            ];
+        }
+
+        if (!empty($insert)) {
+            if (!Db::name(static::$table_collection_name)->insert($insert)) {
+                return '系统繁忙';
+            }
+        } else {
+            if (!Db::name(static::$table_collection_name)->where('id', $check['id'])->delete(true)) {
+                return '系统繁忙';
+            }
+        }
+        return true;
+    }
+
+    /**
      * 申请医生
      * @param array $params
      * @return bool|string
@@ -277,16 +316,18 @@ class User
         try {
             Db::startTrans();
             $user_id = request()->userInfo['id'];
-            $where = [
-                ['user_id', '=', $user_id],
-                ['status', '>', 0]
-            ];
 
-            $check_hospital = Db::name(static::$table_hospital_name)->where($where)->find();
+            $check_hospital = Db::name(static::$table_hospital_name)->where([
+                ['operate_id', '=', $user_id],
+                ['status', '>', 0],
+            ])->find();
             if (!empty($check_hospital)) {
                 throw new Exception('您已提交过医院合作申请了');
             }
-            $check = Db::name(static::$table_doctor_application_name)->where($where)->find();
+            $check = Db::name(static::$table_doctor_application_name)->where([
+                ['user_id', '=', $user_id],
+                ['status', '>', 0]
+            ])->find();
             if (!empty($check)) {
                 throw new Exception('请勿重复提交');
             }
@@ -297,8 +338,8 @@ class User
                 'hospital_id' => $params['hospital_id'],
                 'department_id' => $params['department_id'],
                 'good_subjects' => $params['good_subjects'] ?? '',
-                'case_type_ids' => $params['case_type_ids'] ?? '',
-                'case_subject_ids' => $params['case_subject_ids'] ?? '',
+                'case_type_ids' => json_encode($params['case_type_ids'] ?? []),
+                'case_subject_ids' => json_encode($params['case_subject_ids'] ?? []),
                 'create_time' => $date,
             ];
 
@@ -414,8 +455,82 @@ class User
         return $lists;
     }
 
+    /** 医生申请详情 */
     public static function doctorApplyDetail(array $params): array
     {
+        $where = [
+            ['a.id', '=', intval($params['id'] ?? 0)],
+        ];
 
+        switch (request()->userInfo['type']) {
+            case T::YOUKE:
+                $where[] = ['a.user_id', '=', request()->userInfo['id']];
+                break;
+            case T::YISHENG:
+                return [];
+            case T::XIAOSHOU:
+            case T::YIYUAN:
+                $where[] = ['a.hospital_id', '=', request()->userInfo['hospital_id']];
+                break;
+            default:
+                return [];
+                break;
+        }
+
+        $detail = Db::name(static::$table_doctor_application_name)->alias('a')
+                ->where($where)
+                ->find() ?? [];
+        if (!empty($detail)) {
+            $detail['case_type_ids'] = json_decode($detail['case_type_ids'], true) ?: [];
+            $detail['case_subject_ids'] = json_decode($detail['case_subject_ids'], true) ?: [];
+        }
+        return $detail;
+    }
+
+    /**
+     * 医生审核
+     * @param array $params
+     * @return bool|string
+     */
+    public static function auditDoctor(array $params)
+    {
+        try {
+            Db::startTrans();
+            $status = $params['status'] ?? -1;
+            if (!in_array($status, [-1, 2])) {
+                throw new Exception('非法操作');
+            }
+            $where = [
+                'id' => intval($params['id'] ?? 0),
+                'hospital_id' => request()->userInfo['hospital_id'],
+                'status' => 1,
+            ];
+            $check = Db::name(static::$table_doctor_application_name)->where($where)->find();
+            if (empty($check)) {
+                throw new Exception('请勿重复操作');
+            }
+            $date = date('Y-m-d H:i:s');
+            $update = [
+                'status' => $status,
+                'note' => $params['note'] ?? '',
+                'audit_id' => request()->userInfo['id'],
+                'update_time' => $date,
+            ];
+
+            if (!Db::name(static::$table_doctor_application_name)->where('id', $check['id'])->where($where)->update($update)) {
+                throw new Exception('系统繁忙');
+            }
+            //通过更新用户状态
+            if (2 === $status && !Db::name(static::$table_name)->where(['id' => $check['user_id'], 'type' => T::YOUKE])
+                    ->update([ 'type' => T::YISHENG, 'name' => $check['user_name'], 'update_time' => $date ])) {
+                throw new Exception('系统繁忙');
+            }
+            Db::commit();
+        } catch (Exception $e) {
+            Db::rollback();
+            return $e->getMessage();
+        }
+
+        return true;
     }
 }
