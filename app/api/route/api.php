@@ -35,6 +35,9 @@ Route::rule('cases/apparatus_cases', 'Cases/apparatus_cases', 'POST'); /** 器�
 Route::rule('doctor_apply_lists', 'User/doctorApplyLists', 'POST'); /** 医生审核列表 @see \app\api\controller\User::doctorApplyLists() */
 Route::rule('doctor_apply_detail', 'User/doctorApplyDetail', 'POST'); /** 医生审核列表 @see \app\api\controller\User::doctorApplyDetail() */
 Route::rule('doctor_apply_audit', 'User/auditDoctor', 'POST'); /** 医生审核列表 @see \app\api\controller\User::auditDoctor() */
+Route::rule('doctor_lists', 'Hospital/doctorLists', 'POST'); /** 医生管理列表 @see \app\api\controller\Hospital::doctorLists() */
+Route::rule('doctor_detail', 'Hospital/doctorDetail', 'POST'); /** 医生详情 @see \app\api\controller\Hospital::doctorDetail() */
+Route::rule('doctor_edit', 'Hospital/doctorEdit', 'POST'); /** 医生详情 @see \app\api\controller\Hospital::doctorEdit() */
 
 /** 游客我的 */
 Route::rule('apply_doctor', 'User/doctorApply', 'POST'); /** 申请医生 @see \app\api\controller\User::doctorApply() */
