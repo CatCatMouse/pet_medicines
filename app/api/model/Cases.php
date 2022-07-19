@@ -221,7 +221,8 @@ class Cases
             foreach ($params['attending_physicians'] as $v) {
                 $doctor_inserts[] = [
                     'case_id' => $case_id,
-                    'doctor_id' => intval($v),
+                    'doctor_id' => $v['id'],
+                    'doctor_name' => $v['name'],
                 ];
             }
 
@@ -289,7 +290,8 @@ class Cases
             foreach ($params['attending_physicians'] as $v) {
                 $doctor_inserts[] = [
                     'case_id' => $case_id,
-                    'doctor_id' => intval($v),
+                    'doctor_id' => $v['id'],
+                    'doctor_name' => $v['name'],
                 ];
             }
             Db::name('case_doctors')->where('case_id', $case_id)->delete(true);

@@ -56,7 +56,11 @@ class User
                     case T::YOUKE: // 游客
                         break;
                     case T::XIAOSHOU: //销售 - 归属公司信息和管理医院信息
-                        $userInfo['hospital_info'] = static::bindHospitalLists(['user_id' => $userInfo['id']]);
+                        $userInfo['hospital_info'] = [];
+                        $hospitals = static::bindHospitalLists(['user_id' => $userInfo['id']]);
+                        foreach ($hospitals as $v) {
+                            $userInfo['hospital_info'][$v['id']] = $v;
+                        }
                         $userInfo['factory_info'] = Db::name('factories')->where('id', $userInfo['factory_id'])->find() ?? [];
                         break;
                     case T::YISHENG: // 医生 - 归属医院信息

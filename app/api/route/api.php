@@ -5,6 +5,7 @@
  * Time 14:51
  * Desc
  */
+
 use think\facade\Route;
 
 /** 登录 */
@@ -31,6 +32,19 @@ Route::rule('cases/detail', 'Cases/detail', 'POST'); /** 病例详情 @see \app\
 Route::rule('cases/apparatus_cases', 'Cases/apparatus_cases', 'POST'); /** 器械相关病例列表 @see \app\api\controller\Cases::apparatus_cases() */
 Route::rule('cases/add', 'Cases/add', 'POST'); /** 新增病例 @see \app\api\controller\Cases::add() */
 Route::rule('cases/edit', 'Cases/edit', 'POST'); /** 编辑病例 @see \app\api\controller\Cases::edit() */
+
+Route::group(function (){
+    /** 手术crud */
+    Route::rule('case_operation/add', 'CaseOperations/add', 'POST'); /** 新增手术 @see \app\api\controller\CaseOperations::add() */
+    Route::rule('case_operation/edit', 'CaseOperations/edit', 'POST'); /** 编辑手术 @see \app\api\controller\CaseOperations::edit() */
+    Route::rule('case_operation/before_add', 'CaseOperations/before_add', 'POST'); /** 新增术前 @see \app\api\controller\CaseOperations::before_add() */
+    Route::rule('case_operation/middle_add', 'CaseOperations/middle_add', 'POST'); /** 新增术中 @see \app\api\controller\CaseOperations::middle_add() */
+    Route::rule('case_operation/after_add', 'CaseOperations/after_add', 'POST'); /** 新增术后 @see \app\api\controller\CaseOperations::after_add() */
+
+    Route::rule('case_operation/before_edit', 'CaseOperations/before_edit', 'POST'); /** 编辑术前 @see \app\api\controller\CaseOperations::before_edit() */
+    Route::rule('case_operation/middle_edit', 'CaseOperations/middle_edit', 'POST'); /** 编辑术中 @see \app\api\controller\CaseOperations::middle_edit() */
+    Route::rule('case_operation/after_edit', 'CaseOperations/after_edit', 'POST'); /** 编辑术后 @see \app\api\controller\CaseOperations::after_edit() */
+})->middleware([\app\common\middleware\Token::class]);
 
 /** 销售我的 */
 Route::rule('sale/my_hospitals', 'User/bindHospitalLists', 'POST'); /** 医生详情 @see \app\api\controller\User::bindHospitalLists() */
