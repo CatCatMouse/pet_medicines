@@ -15,6 +15,7 @@ class CaseOperations
 {
     public static $table_name = 'case_operations';
 
+    /** 病例手术信息 */
     public static function case_operations(int $case_id): array
     {
         $where = [

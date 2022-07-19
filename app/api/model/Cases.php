@@ -10,8 +10,10 @@
 namespace app\api\model;
 
 use app\common\enum\CasesIsTop as C_IsTop;
+use think\Exception;
 use think\facade\Db;
 use app\common\enum\UserEnumType as T;
+
 class Cases
 {
     public static $table_name = 'cases';
@@ -41,7 +43,7 @@ class Cases
             $where[] = ['c.hospital_id', '=', $params['hospital_id']];
         }
         /** 分类 */
-        if (!empty($params['case_type_id']) && is_array($params['case_type_id']) ) {
+        if (!empty($params['case_type_id']) && is_array($params['case_type_id'])) {
             if (count($params['case_type_id']) == 1) {
                 $where[] = ['c.case_type_id', '=', $params['case_type_id'][0]];
             } else {
@@ -141,7 +143,7 @@ class Cases
             ['c.id', '=', intval($params['id'] ?? 0)]
         ];
         /** 游客只能看推荐的 */
-        if(T::YOUKE === request()->userInfo['type']) {
+        if (T::YOUKE === request()->userInfo['type']) {
             $where[] = ['c.is_top', '=', 1];
         }
         $field = "
@@ -166,10 +168,141 @@ class Cases
 
         if (!empty($detail)) {
             $detail['imgs'] = array_filter(explode(',', $detail['imgs']));
-            $detail['videos'] = array_filter(explode(',', $detail['videos'] ??''));
+            $detail['videos'] = array_filter(explode(',', $detail['videos'] ?? ''));
             $detail['operation_lists'] = CaseOperations::case_operations($detail['id']);
         }
 
         return $detail;
+    }
+
+    /**
+     * 新增病例
+     * @param array $params
+     * @return bool|string
+     */
+    public static function add(array $params)
+    {
+        try {
+            Db::startTrans();
+            $uid = request()->userInfo['id'];
+            $sale_id = 0;
+            if (request()->userInfo['type'] == T::XIAOSHOU) {
+                $sale_id = $uid;
+            }
+            $insert = [
+                'hospital_id' => $params['hospital_id'],
+                'name' => $params['name'],
+                'case_type_id' => $params['case_type_id'],
+                'case_subject_id' => $params['case_subject_id'],
+                'variety_id' => $params['variety_id'],
+                'age_year' => intval($params['age_year'] ?? 0),
+                'age_month' => intval($params['age_month'] ?? 0),
+                'sex' => $params['sex'] == 1 ? 1 : 2,
+                'desc' => $params['desc'],
+                'videos' => json_encode($params['videos'] ?? []),
+                'imgs' => json_encode($params['imgs'] ?? []),
+                'sale_id' => $sale_id,
+                'operate_id' => $uid,
+                'create_time' => date('Y-m-d H:i:s'),
+            ];
+
+            if (!is_array($params['attending_physicians'])) {
+                throw new Exception('格式错误');
+            }
+
+            //插入病例
+            $case_id = Db::name(static::$table_name)->insertGetId($insert);
+            if (!$case_id) {
+                throw new Exception('系统繁忙');
+            }
+
+            //插入医师
+            $doctor_inserts = [];
+            foreach ($params['attending_physicians'] as $v) {
+                $doctor_inserts[] = [
+                    'case_id' => $case_id,
+                    'doctor_id' => intval($v),
+                ];
+            }
+
+            if (!empty($doctor_inserts)) {
+                if (count($doctor_inserts) !== Db::name('case_doctors')->insertAll($doctor_inserts)) {
+                    throw new Exception('系统繁忙2');
+                }
+            }
+            Db::commit();
+        } catch (Exception $e) {
+            Db::rollback();
+            return $e->getMessage();
+        }
+        return true;
+    }
+
+    /**
+     * 编辑病例
+     * @param array $params
+     * @return bool|string
+     */
+    public static function edit(array $params)
+    {
+        try {
+            Db::startTrans();
+            $uid = request()->userInfo['id'];
+            $sale_id = 0;
+            if (request()->userInfo['type'] == T::XIAOSHOU) {
+                $sale_id = $uid;
+            }
+            $update = [
+                'hospital_id' => $params['hospital_id'],
+                'name' => $params['name'],
+                'case_type_id' => $params['case_type_id'],
+                'case_subject_id' => $params['case_subject_id'],
+                'variety_id' => $params['variety_id'],
+                'age_year' => intval($params['age_year'] ?? 0),
+                'age_month' => intval($params['age_month'] ?? 0),
+                'sex' => $params['sex'] == 1 ? 1 : 2,
+                'desc' => $params['desc'],
+                'videos' => json_encode($params['videos'] ?? []),
+                'imgs' => json_encode($params['imgs'] ?? []),
+                'update_time' => date('Y-m-d H:i:s'),
+            ];
+            if (!empty($sale_id)) {
+                $update['sale_id'] = $sale_id;
+            }
+            $where = ['id' => $params['id']];
+            $check = Db::name(static::$table_name)->where($where)->find();
+            $case_id = $check['id'];
+            if (empty($check)) {
+                throw new Exception('病例不存在');
+            }
+
+            if (!is_array($params['attending_physicians'])) {
+                throw new Exception('格式错误');
+            }
+
+            //修改病例
+            if(!Db::name(static::$table_name)->where($where)->update($update)) {
+                throw new Exception('系统繁忙');
+            }
+            //重新插入医师
+            $doctor_inserts = [];
+            foreach ($params['attending_physicians'] as $v) {
+                $doctor_inserts[] = [
+                    'case_id' => $case_id,
+                    'doctor_id' => intval($v),
+                ];
+            }
+            Db::name('case_doctors')->where('case_id', $case_id)->delete(true);
+            if (!empty($doctor_inserts)) {
+                if (count($doctor_inserts) !== Db::name('case_doctors')->insertAll($doctor_inserts)) {
+                    throw new Exception('系统繁忙2');
+                }
+            }
+            Db::commit();
+        } catch (Exception $e) {
+            Db::rollback();
+            return $e->getMessage();
+        }
+        return true;
     }
 }

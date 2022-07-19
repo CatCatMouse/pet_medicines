@@ -15,6 +15,9 @@ use think\facade\Cache;
 use think\facade\Db;
 use weChat\appLet\Login as appLetLogin;
 use app\common\enum\UserEnumType as T;
+use app\common\enum\HospitalsEnumStatus as HE;
+use app\api\model\Hospitals as HM;
+use app\api\model\Cases as CM;
 
 class User
 {
@@ -53,7 +56,7 @@ class User
                     case T::YOUKE: // 游客
                         break;
                     case T::XIAOSHOU: //销售 - 归属公司信息和管理医院信息
-                        $userInfo['hospital_info'] = Db::name('hospitals')->where('id', $userInfo['hospital_id'])->find() ?? [];
+                        $userInfo['hospital_info'] = static::bindHospitalLists(['user_id' => $userInfo['id']]);
                         $userInfo['factory_info'] = Db::name('factories')->where('id', $userInfo['factory_id'])->find() ?? [];
                         break;
                     case T::YISHENG: // 医生 - 归属医院信息
@@ -365,6 +368,52 @@ class User
     }
 
     /**
+     * 新增医院合作
+     * @param array $params
+     * @return bool|string
+     */
+    public static function hospitalAdd(array $params)
+    {
+        try {
+            Db::startTrans();
+            $user_id = request()->userInfo['id'];
+            $where = [
+                ['name', '=', $params['name']],
+                ['status', '>', 0]
+            ];
+            $check_hospital = Db::name(static::$table_hospital_name)->where($where)->find();
+            if (!empty($check_hospital)) {
+                throw new Exception('请勿重复提交');
+            }
+
+            $date = date('Y-m-d H:i:s');
+            $insert = [
+                'operate_id' => $user_id,
+                'name' => $params['name'],
+                'contact_name' => $params['contact_name'],
+                'contact_phone' => $params['contact_phone'],
+                'lng' => $params['lng'],
+                'lat' => $params['lat'],
+                'address' => $params['address'],
+                'desc' => $params['desc'],
+                'create_time' => $date,
+            ];
+
+            if (!Db::name(static::$table_hospital_name)->insert($insert)) {
+                throw new Exception('系统繁忙');
+            }
+            Db::commit();
+        } catch (Exception $e) {
+            Db::rollback();
+            if (preg_match('/Duplicate entry/', $e->getMessage())) {
+                $msg = '医院名称已存在';
+            }
+            return $msg ?? $e->getMessage();
+        }
+        return true;
+    }
+
+    /**
      * 申请医院合作
      * @param array $params
      * @return bool|string
@@ -420,7 +469,10 @@ class User
             Db::commit();
         } catch (Exception $e) {
             Db::rollback();
-            return $e->getMessage();
+            if (preg_match('/Duplicate entry/', $e->getMessage())) {
+                $msg = '医院名称已存在';
+            }
+            return $msg ?? $e->getMessage();
         }
         return true;
     }
@@ -436,7 +488,7 @@ class User
     public static function doctorApplyLists(array $params): array
     {
         $where = [
-            ['a.hospital_id', '=', intval(request()->userInfo['hospital_id'] ?? 0)],
+            ['a.hospital_id', '=', $params['hospital_id']],
             ['a.status', '=', 1],
             ['u.status', '=', 1],
         ];
@@ -470,7 +522,7 @@ class User
                 return [];
             case T::XIAOSHOU:
             case T::YIYUAN:
-                $where[] = ['a.hospital_id', '=', request()->userInfo['hospital_id']];
+                $where[] = ['a.hospital_id', '=', $params['hospital_id']];
                 break;
             default:
                 return [];
@@ -502,7 +554,7 @@ class User
             }
             $where = [
                 'id' => intval($params['id'] ?? 0),
-                'hospital_id' => request()->userInfo['hospital_id'],
+                'hospital_id' => $params['hospital_id'],
                 'status' => 1,
             ];
             $check = Db::name(static::$table_doctor_application_name)->where($where)->find();
@@ -522,7 +574,7 @@ class User
             }
             //通过更新用户状态
             if (2 === $status && !Db::name(static::$table_name)->where(['id' => $check['user_id'], 'type' => T::YOUKE])
-                    ->update([ 'type' => T::YISHENG, 'name' => $check['user_name'], 'update_time' => $date ])) {
+                    ->update(['type' => T::YISHENG, 'name' => $check['user_name'], 'update_time' => $date])) {
                 throw new Exception('系统繁忙');
             }
             Db::commit();
@@ -532,5 +584,41 @@ class User
         }
 
         return true;
+    }
+
+    /** 销售负责的医院列表 */
+    public static function bindHospitalLists(array $params): array
+    {
+        $where = [
+            's.user_id' => request()->userInfo['id'] ?? ($params['user_id'] ?? 0),
+        ];
+        if (!empty($params['status']) && in_array($params['status'], [HE::SHENHETONGGUO, HE::SHENHESHIBAI])) {
+            $where['h.status'] = $params['status'];
+        }
+
+        $order = 's.id desc';
+        $field = 'h.id as hospital_id,h.name,h.status,h.address,h.contact_name,h.contact_phone';
+        $lists = Db::name('sale_hospitals')->alias('s')
+            ->join((static::$table_hospital_name) . ' h', 's.hospital_id = h.id')
+            ->where($where)
+            ->page($params['page'] ?? 1)
+            ->limit($params['limit'] ?? 20)
+            ->order($order)
+            ->field($field)
+            ->select()
+            ->toArray();
+        return $lists;
+    }
+
+    /** 销售绑定的医院详情 */
+    public static function bindHospitalDetail(array $params): array
+    {
+        $hospital_id = $params['hospital_id'];
+        $detail = HM::hospitalDetail(['hospital_id' => $hospital_id]);
+        if (!empty($detail)) {
+            $detail['doctors'] = HM::doctorLists(['hospital_id' => $hospital_id]);
+            $detail['cases'] = CM::lists(['hospital_id' => $hospital_id]);
+        }
+        return $detail;
     }
 }

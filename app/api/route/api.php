@@ -29,7 +29,12 @@ Route::rule('apparatus/detail', 'Apparatuses/detail', 'POST'); /** 器械详情 
 Route::rule('cases/lists', 'Cases/lists', 'POST'); /** 首页病例库列表 @see \app\api\controller\Cases::lists() */
 Route::rule('cases/detail', 'Cases/detail', 'POST'); /** 病例详情 @see \app\api\controller\Cases::detail() */
 Route::rule('cases/apparatus_cases', 'Cases/apparatus_cases', 'POST'); /** 器械相关病例列表 @see \app\api\controller\Cases::apparatus_cases() */
+Route::rule('cases/add', 'Cases/add', 'POST'); /** 新增病例 @see \app\api\controller\Cases::add() */
+Route::rule('cases/edit', 'Cases/edit', 'POST'); /** 编辑病例 @see \app\api\controller\Cases::edit() */
 
+/** 销售我的 */
+Route::rule('sale/my_hospitals', 'User/bindHospitalLists', 'POST'); /** 医生详情 @see \app\api\controller\User::bindHospitalLists() */
+Route::rule('sale/my_hospital_detail', 'User/bindHospitalDetail', 'POST'); /** 医生详情 @see \app\api\controller\User::bindHospitalDetail() */
 
 /** 医院我的 */
 Route::rule('doctor_apply_lists', 'User/doctorApplyLists', 'POST'); /** 医生审核列表 @see \app\api\controller\User::doctorApplyLists() */
@@ -38,6 +43,8 @@ Route::rule('doctor_apply_audit', 'User/auditDoctor', 'POST'); /** 医生审核�
 Route::rule('doctor_lists', 'Hospital/doctorLists', 'POST'); /** 医生管理列表 @see \app\api\controller\Hospital::doctorLists() */
 Route::rule('doctor_detail', 'Hospital/doctorDetail', 'POST'); /** 医生详情 @see \app\api\controller\Hospital::doctorDetail() */
 Route::rule('doctor_edit', 'Hospital/doctorEdit', 'POST'); /** 医生详情 @see \app\api\controller\Hospital::doctorEdit() */
+Route::rule('doctor_case_auth_edit', 'Hospital/changeCaseAuth', 'POST'); /** 医生病例操作权限编辑 @see \app\api\controller\Hospital::changeCaseAuth() */
+Route::rule('doctor_revoke', 'Hospital/dockerRevoke', 'POST'); /** 撤销医生 @see \app\api\controller\Hospital::dockerRevoke() */
 
 /** 游客我的 */
 Route::rule('apply_doctor', 'User/doctorApply', 'POST'); /** 申请医生 @see \app\api\controller\User::doctorApply() */
@@ -48,6 +55,8 @@ Route::rule('join_collection', 'User/joinCollection', 'POST'); /** 加入/取消
 Route::rule('my_collections', 'User/myCollections', 'POST'); /** 我的收藏 @see \app\api\controller\User::myCollections() */
 Route::rule('types', 'CaseTypes/map_list', 'POST'); /** 分类 @see \app\api\controller\CaseTypes::map_list() */
 Route::rule('subjects', 'CaseSubjects/map_list', 'POST'); /** 科目 @see \app\api\controller\CaseSubjects::map_list() */
+Route::rule('varieties', 'Varieties/map_list', 'POST'); /** 科目 @see \app\api\controller\Varieties::map_list() */
+Route::rule('hospitals', 'Hospital/map_list', 'POST'); /** 科目 @see \app\api\controller\Hospital::map_list() */
 
 /** 医院申请页配置 */
 Route::rule('doctor_apply_configs', 'User/doctorApplyConfig', 'POST'); /** 医生审核列表 @see \app\api\controller\User::doctorApplyConfig() */

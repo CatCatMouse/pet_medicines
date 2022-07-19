@@ -23,6 +23,13 @@ use app\common\enum\UserEnumType as T;
 
 class User extends Api
 {
+    protected function _dataHandle(): array
+    {
+        $hospital_id = ($this->request->userInfo['type'] == T::YIYUAN) ? $this->request->userInfo['hospital_id'] : ($this->request->post('hospital_id', 0));
+        return array_merge($this->request->post(),['hospital_id' => $hospital_id]);
+    }
+
+
     /**
      * 获取用户信息
      * @return J
@@ -106,7 +113,7 @@ class User extends Api
             return RJ::fail('非法操作');
         }
 
-        if (!$va->scene(__METHOD__)->check($this->request->post())) {
+        if (!$va->scene(__FUNCTION__)->check($this->request->post())) {
             return RJ::fail($va->getError());
         }
 
@@ -127,20 +134,22 @@ class User extends Api
      */
     public function hospitalApply(HospitalValidate $va): J
     {
-        if ($this->request->userInfo['type'] !== T::YOUKE) { // 非游客不可申请
-            return RJ::fail('非法操作');
-        }
-
-        if (!$va->scene(__METHOD__)->check($this->request->post())) {
+        if (!$va->scene(__FUNCTION__)->check($this->request->post())) {
             return RJ::fail($va->getError());
         }
-
-        $res = U::hospitalApply($this->request->post());
-
+        switch ($this->request->userInfo['type']) {
+            case T::YOUKE:
+                $res = U::hospitalApply($this->request->post());
+                break;
+            case T::XIAOSHOU:
+                $res = U::hospitalAdd($this->request->post());
+                break;
+            default:
+                return RJ::fail('非法操作');
+        }
         if (true !== $res) {
             return RJ::fail($res);
         }
-
         return RJ::success([], '申请成功');
     }
 
@@ -153,7 +162,7 @@ class User extends Api
         if (!in_array($this->request->userInfo['type'], [T::XIAOSHOU, T::YIYUAN])) {
             return RJ::fail('您无操作权限');
         }
-        return RJ::success(U::doctorApplyLists($this->request->post()));
+        return RJ::success(U::doctorApplyLists($this->_dataHandle()));
     }
 
     /**
@@ -162,11 +171,15 @@ class User extends Api
      */
     public function doctorApplyDetail(): J
     {
-        return RJ::success(U::doctorApplyDetail($this->request->post()));
+        if (!in_array($this->request->userInfo['type'], [T::XIAOSHOU, T::YIYUAN])) {
+            return RJ::fail('您无操作权限');
+        }
+
+        return RJ::success(U::doctorApplyDetail($this->_dataHandle()));
     }
 
     /**
-     * 医生申请详情表
+     * 医生申请处理
      * @return J
      */
     public function auditDoctor(): J
@@ -174,12 +187,36 @@ class User extends Api
         if (!in_array($this->request->userInfo['type'], [T::XIAOSHOU, T::YIYUAN])) {
             return RJ::fail('您无操作权限');
         }
-        $res = U::auditDoctor($this->request->post());
+        $res = U::auditDoctor($this->_dataHandle());
         if (true !== $res) {
             return RJ::fail($res ?: '操作失败');
         }
         return RJ::success([], '操作成功');
     }
 
+
+    /**
+     * 销售的医院列表
+     * @return J
+     */
+    public function bindHospitalLists(): J
+    {
+        if (!in_array($this->request->userInfo['type'], [T::XIAOSHOU])) {
+            return RJ::fail('您无操作权限');
+        }
+        return RJ::success(U::bindHospitalLists($this->_dataHandle()));
+    }
+
+    /**
+     * 销售的医院详情
+     * @return J
+     */
+    public function bindHospitalDetail(): J
+    {
+        if (!in_array($this->request->userInfo['type'], [T::XIAOSHOU])) {
+            return RJ::fail('您无操作权限');
+        }
+        return RJ::success(U::bindHospitalDetail($this->_dataHandle()));
+    }
 
 }
