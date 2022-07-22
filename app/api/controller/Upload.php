@@ -16,7 +16,6 @@ use QiNiuYun\QNOss as Oss;
 
 class Upload extends Api
 {
-    public $middleware = [];
 
     /**
      * 获取上传token

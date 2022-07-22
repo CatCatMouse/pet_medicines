@@ -223,4 +223,22 @@ class CaseOperations extends Api
         return RJ::success([], '编辑成功');
     }
 
+    /**
+     * 手术详情页
+     * @return J
+     */
+    public function detail(): J
+    {
+        return RJ::success(COM::detail($this->request->post()));
+    }
+
+    /**
+     * 手术类型的详情页
+     * @return J
+     */
+    public function operation_type_detail(): J
+    {
+        return RJ::success(COM::operation_type_detail($this->request->post()));
+    }
+
 }

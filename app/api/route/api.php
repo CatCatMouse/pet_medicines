@@ -44,6 +44,8 @@ Route::group(function (){
     Route::rule('case_operation/before_edit', 'CaseOperations/before_edit', 'POST'); /** 编辑术前 @see \app\api\controller\CaseOperations::before_edit() */
     Route::rule('case_operation/middle_edit', 'CaseOperations/middle_edit', 'POST'); /** 编辑术中 @see \app\api\controller\CaseOperations::middle_edit() */
     Route::rule('case_operation/after_edit', 'CaseOperations/after_edit', 'POST'); /** 编辑术后 @see \app\api\controller\CaseOperations::after_edit() */
+    Route::rule('case_operation/detail', 'CaseOperations/detail', 'POST'); /** 手术详情页 @see \app\api\controller\CaseOperations::detail() */
+    Route::rule('case_operation/operation_type_detail', 'CaseOperations/operation_type_detail', 'POST'); /** 手术类型的详情页  @see \app\api\controller\CaseOperations::operation_type_detail() */
 })->middleware([\app\common\middleware\Token::class]);
 
 /** 销售我的 */
@@ -68,9 +70,9 @@ Route::rule('apply_hospital', 'User/hospitalApply', 'POST'); /** 申请医院合
 Route::rule('join_collection', 'User/joinCollection', 'POST'); /** 加入/取消收藏 @see \app\api\controller\User::joinCollection() */
 Route::rule('my_collections', 'User/myCollections', 'POST'); /** 我的收藏 @see \app\api\controller\User::myCollections() */
 Route::rule('types', 'CaseTypes/map_list', 'POST'); /** 分类 @see \app\api\controller\CaseTypes::map_list() */
-Route::rule('subjects', 'CaseSubjects/map_list', 'POST'); /** 科目 @see \app\api\controller\CaseSubjects::map_list() */
-Route::rule('varieties', 'Varieties/map_list', 'POST'); /** 科目 @see \app\api\controller\Varieties::map_list() */
-Route::rule('hospitals', 'Hospital/map_list', 'POST'); /** 科目 @see \app\api\controller\Hospital::map_list() */
+Route::rule('subjects', 'CaseSubjects/map_list', 'POST'); /** 科目map @see \app\api\controller\CaseSubjects::map_list() */
+Route::rule('varieties', 'Varieties/map_list', 'POST'); /** 品种map @see \app\api\controller\Varieties::map_list() */
+Route::rule('hospitals', 'Hospital/map_list', 'POST'); /** 医院map @see \app\api\controller\Hospital::map_list() */
 
 /** 医院申请页配置 */
 Route::rule('doctor_apply_configs', 'User/doctorApplyConfig', 'POST'); /** 医生审核列表 @see \app\api\controller\User::doctorApplyConfig() */

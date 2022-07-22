@@ -10,6 +10,7 @@
 namespace app\api\model;
 
 use think\Exception;
+use think\facade\Cache;
 use think\facade\Db;
 
 class CaseOperations
@@ -27,7 +28,7 @@ class CaseOperations
         ];
         $field = '
         co.id,co.case_id,co.name,co.start_time
-        ,(select group_concat(concat(apparatus_id,":",apparatus_name,":",type)) from sd_case_operation_apparatus_logs where operation_id = co.id limit 1) as apparatus
+        ,(select group_concat(concat(apparatus_id,":",apparatus_name,":",apparatus_type)) from sd_case_operation_apparatus_logs where operation_id = co.id limit 1) as apparatus
         ';
         $order = 'co.id desc';
         $lists = Db::name(static::$table_name)->alias('co')
@@ -53,6 +54,71 @@ class CaseOperations
             }
         }
         return ['lists' => $lists, 'total' => count($lists)];
+    }
+
+    public static function detail(array $params): array
+    {
+        $key = 'api-case_operation-detail' . md5(json_encode($params));
+        if (Cache::has($key)) {
+            $detail = Cache::get($key);
+        } else {
+            $where = [
+                'co.id' => $params['id'] ?? 0,
+                'co.case_id' => $params['case_id'] ?? 0,
+            ];
+            $field = 'co.*, ifnull(h.name,"") as hospital_name';
+            $detail = Db::name(static::$table_name)->alias('co')->join('hospitals h', 'co.hospital_id = h.id', 'left')->where($where)->field($field)->find();
+            if (empty($detail)) {
+                return [];
+            }
+
+            $operation_field = '
+                    d.id,d.case_id,d.hospital_id,d.operation_id,d.type,d.start_time,d.info,d.videos,d.imgs
+                    ,(if(d.type=2,((select group_concat(concat(apparatus_id,"@@@",apparatus_name,"@@@",apparatus_type) separator "***") from sd_case_operation_apparatus_logs where operation_detail_id = d.id)),"")) as operation_apparatuses
+        ';
+            $operation_details = Db::name(static::$table_detail_name)->alias('d')->where('d.operation_id', $detail['id'])->field($operation_field)->order('d.id desc')->select()->toArray();
+
+            foreach ($operation_details as &$v) {
+                $v['imgs'] = array_filter(explode(',', $v['imgs']));
+                $v['videos'] = array_filter(explode(',', $v['videos'] ?? ''));
+                $operation_apparatuses = $v['operation_apparatuses'];
+                $v['operation_apparatuses'] = [];
+                foreach (array_filter(explode('***', $operation_apparatuses)) as $v1) {
+                    $operation_apparatus = array_filter(explode('@@@', $v1));
+
+                    $v['operation_apparatuses'][] = [
+                        'apparatus_id' => $operation_apparatus[0] ?? 0,
+                        'apparatus_name' => $operation_apparatus[1] ?? '',
+                        'apparatus_type' => $operation_apparatus[2] ?? 2,
+                    ];
+                }
+            }
+            $detail['details'] = $operation_details;
+            Cache::set($key, $detail, random_int(15, 45));
+        }
+        return $detail;
+
+    }
+
+    public static function operation_type_detail(array $params): array
+    {
+        $where = [
+            'id' => $params['id'] ?? 0,
+            'case_id' => $params['case_id'] ?? 0,
+            'operation_id' => $params['operation_id'] ?? 0,
+        ];
+        $detail = Db::name(static::$table_detail_name)->where($where)->find();
+        if (empty($detail)) {
+            return [];
+        }
+
+        $detail['imgs'] = array_filter(explode(',', $detail['imgs']));
+        $detail['videos'] = array_filter(explode(',', $detail['videos'] ?? ''));
+        $detail['operation_apparatuses'] = [];
+        if ($detail['type'] == 2) {
+            $detail['operation_apparatuses'] = Db::name(static::$table_operation_apparatus_name)->where('operation_detail_id', $detail['id'])->select()->toArray();
+        }
+        return $detail;
     }
 
     /**
@@ -150,8 +216,8 @@ class CaseOperations
                 'name' => $params['name'],
                 'start_time' => $params['start_time'],
                 'info' => $params['info'],
-                'videos' => implode(',',$params['videos'] ?? []),
-                'imgs' => implode(',',$params['imgs'] ?? []),
+                'videos' => implode(',', $params['videos'] ?? []),
+                'imgs' => implode(',', $params['imgs'] ?? []),
                 'create_time' => $date,
             ];
             $id = Db::name(static::$table_detail_name)->insertGetId($insert);
@@ -188,8 +254,8 @@ class CaseOperations
                 'type' => $type,
                 'name' => $params['name'],
                 'info' => $params['info'],
-                'videos' => implode(',',$params['videos'] ?? []),
-                'imgs' => implode(',',$params['imgs'] ?? []),
+                'videos' => implode(',', $params['videos'] ?? []),
+                'imgs' => implode(',', $params['imgs'] ?? []),
                 'create_time' => $date,
             ];
             /** 术中开始时间 */
@@ -207,7 +273,9 @@ class CaseOperations
             if (!empty($params['apparatus']) && is_array($params['apparatus'])) {
                 foreach ($params['apparatus'] as $v) {
                     $apparatus_id = $v['id'];
+                    $apparatus_type = 1;
                     if (empty($apparatus_id)) {
+                        $apparatus_type = 2;
                         $apparatus_id = static::checkCustomizedApparatus($v['name']);
                         if (empty($apparatus_id)) {
                             continue;
@@ -219,6 +287,7 @@ class CaseOperations
                         'hospital_id' => $params['hospital_id'],
                         'operation_id' => $params['operation_id'],
                         'type' => $type,
+                        'apparatus_type' => $apparatus_type,
                         'apparatus_id' => $v['id'],
                         'apparatus_name' => $v['name'],
                     ];
@@ -248,9 +317,10 @@ class CaseOperations
      * 器械使用次数自增
      * @param array $apparatusIds
      */
-    protected static function incApparatusUsedTimes(array $apparatusIds) {
+    protected static function incApparatusUsedTimes(array $apparatusIds)
+    {
         foreach ($apparatusIds as $id) {
-            Db::execute("update `sd_apparatuses` set `times`=`times`+1 where `id` = :id",['id' => $id]);
+            Db::execute("update `sd_apparatuses` set `times`=`times`+1 where `id` = :id", ['id' => $id]);
         }
     }
 
@@ -283,8 +353,8 @@ class CaseOperations
                 'name' => $params['name'],
                 'start_time' => $params['start_time'],
                 'info' => $params['info'],
-                'videos' => implode(',',$params['videos'] ?? []),
-                'imgs' => implode(',',$params['imgs'] ?? []),
+                'videos' => implode(',', $params['videos'] ?? []),
+                'imgs' => implode(',', $params['imgs'] ?? []),
                 'create_time' => $date,
             ];
             $id = Db::name(static::$table_detail_name)->insertGetId($insert);
@@ -313,8 +383,8 @@ class CaseOperations
                 'name' => $params['name'],
                 'start_time' => $params['start_time'],
                 'info' => $params['info'],
-                'videos' => implode(',',$params['videos'] ?? []),
-                'imgs' => implode(',',$params['imgs'] ?? []),
+                'videos' => implode(',', $params['videos'] ?? []),
+                'imgs' => implode(',', $params['imgs'] ?? []),
                 'update_time' => $date,
             ];
             $where = [
@@ -353,8 +423,8 @@ class CaseOperations
             $update = [
                 'name' => $params['name'],
                 'info' => $params['info'],
-                'videos' => implode(',',$params['videos'] ?? []),
-                'imgs' => implode(',',$params['imgs'] ?? []),
+                'videos' => implode(',', $params['videos'] ?? []),
+                'imgs' => implode(',', $params['imgs'] ?? []),
                 'update_time' => $date,
             ];
             /** 术中开始时间 */
@@ -379,8 +449,10 @@ class CaseOperations
             $apparatus_used_times = [];
             if (!empty($params['apparatus']) && is_array($params['apparatus'])) {
                 foreach ($params['apparatus'] as $v) {
+                    $apparatus_type = 1;
                     $apparatus_id = $v['id'];
                     if (empty($apparatus_id)) {
+                        $apparatus_type = 2;
                         $apparatus_id = static::checkCustomizedApparatus($v['name']);
                         if (empty($apparatus_id)) {
                             continue;
@@ -392,6 +464,7 @@ class CaseOperations
                         'hospital_id' => $params['hospital_id'],
                         'operation_id' => $params['operation_id'],
                         'type' => $type,
+                        'apparatus_type' => $apparatus_type,
                         'apparatus_id' => $v['id'],
                         'apparatus_name' => $v['name'],
                     ];
@@ -431,7 +504,7 @@ class CaseOperations
                 'name' => $params['name'],
                 'start_time' => $params['start_time'],
                 'info' => $params['info'],
-                'videos' => implode(',',$params['videos'] ?? []),
+                'videos' => implode(',', $params['videos'] ?? []),
                 'imgs' => implode(',', $params['imgs'] ?? []),
                 'update_time' => $date,
             ];
