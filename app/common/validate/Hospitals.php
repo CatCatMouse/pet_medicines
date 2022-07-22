@@ -23,13 +23,13 @@ class Hospitals extends BaseValidate
         'contact_phone|联系电话' => 'require|mobile',
         'address|地址' => 'require',
         'desc|合作内容' => 'require',
-        'status|状态' => 'require|number|in:1,2,-1',
+//        'status|状态' => 'require|number|in:1,2,-1',
         'audit_id|审核人id' => 'require|number',
         'operate_id|申请人id' => 'require|number',
     ];
 
     protected $scene = [
-        'create' => ['name', 'contact_name', 'contact_phone', 'address', 'desc', 'status', ],
-        'update' => ['id', 'name', 'contact_name', 'contact_phone', 'address', 'desc', 'status', ],
+        'create' => ['name', 'contact_name', 'contact_phone', 'address', 'desc', ],
+        'update' => ['id', 'name', 'contact_name', 'contact_phone', 'address', 'desc', ],
     ];
 }

@@ -7,6 +7,7 @@
 
 namespace app\admin\model;
 
+use app\common\enum\ApparatusesEnumIsTop;
 use app\common\model\Apparatuses as commonApparatuses;
 use app\common\enum\ApparatusesEnumType;
 use app\common\enum\ApparatusesEnumStatus;
@@ -29,6 +30,17 @@ class Apparatuses extends commonApparatuses
     public function getTypeAttr($value): string
     {
         return ApparatusesEnumType::create($value)->getDes();
+    }
+
+    /**
+     * 展示处理
+     * @param $value
+     * @return string
+     * @throws \Exception
+     */
+    public function getIsTopAttr($value): string
+    {
+        return ApparatusesEnumIsTop::create($value)->getDes();
     }
 
     /**

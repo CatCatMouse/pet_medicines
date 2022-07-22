@@ -54,11 +54,11 @@ class HospitalsPage extends BasePage
     }
 
     /**
-    * 生成表单的数据
-    * @param string $scene
-    * @param array $default_data
-    * @return Form
-    */
+     * 生成表单的数据
+     * @param string $scene
+     * @param array $default_data
+     * @return Form
+     */
     public function formPageData(string $scene, array $default_data = []): Form
     {
         $unit = [
@@ -66,11 +66,18 @@ class HospitalsPage extends BasePage
             FormUnit::text('name', '医院名称'),
             FormUnit::text('contact_name', '联系人'),
             FormUnit::text('contact_phone', '联系电话'),
+            FormUnit::text('lng', '经度'),
+            FormUnit::text('lat', '纬度'),
             FormUnit::text('address', '地址'),
             FormUnit::uEditor('desc', '合作内容'),
-            FormUnit::radio('status', '状态')->options(HospitalsEnumStatus::getMap(true)),
+            (!empty($default_data) && $default_data['status'] <> 1)
+                ? FormUnit::text('', '状态')->defaultValue(HospitalsEnumStatus::getMap(true)[$default_data['status']])->inputAttr('-', [
+                'disabled' => true
+            ])
+                : FormUnit::radio('status', '状态')->options(HospitalsEnumStatus::getMap(true))->defaultValue(1)
+            ,
 //            FormUnit::text('audit_id', '审核人id')->options(Administrators::column('name', 'id')),
-//            FormUnit::text('operate_id', '申请人id')->options(User::column('name', 'id')),
+            FormUnit::hidden('operate_id', '申请人id')->defaultValue(0),
         ];
 
         $form = Form::create($unit, $default_data)->setScene($scene);
@@ -90,7 +97,7 @@ class HospitalsPage extends BasePage
                 FormUnit::text('i.name%%')->placeholder('医院名称'),
             ),
         ];
-        
+
         return Form::create($form_data)->setSearchSubmitElement();
     }
 

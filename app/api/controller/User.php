@@ -15,6 +15,7 @@ use app\api\model\Departments;
 use app\api\model\Hospitals;
 use app\api\validate\HospitalValidate;
 use app\api\validate\UserValidate;
+use app\api\model\Varieties;
 use app\common\controller\Api;
 use think\response\Json as J;
 use app\common\ResponseJson as RJ;
@@ -98,6 +99,7 @@ class User extends Api
             'hospitals' => Hospitals::map_list(),
             'subjects' => CaseSubjects::map_list(),
             'types' => CaseTypes::map_list(),
+            'varieties' => Varieties::map_list(),
         ];
         return RJ::success($configs);
     }

@@ -7,12 +7,19 @@
 
 namespace app\admin\controller;
 
+use app\admin\AdminBaseService;
+use app\common\BaseModel;
+use app\common\BasePage;
 use app\common\controller\Admin;
+use app\common\ResponseJson;
 use app\common\SdException;
 use app\admin\service\HospitalsService as MyService;
 use app\admin\model\Hospitals as MyModel;
 use app\admin\page\HospitalsPage as MyPage;
 use app\common\validate\Hospitals as MyValidate;
+use think\Exception;
+use think\facade\Db;
+use think\response\Json;
 
 /**
  * 医院表 控制器
@@ -36,8 +43,8 @@ class Hospitals extends Admin
     {
         return parent::index_($service, $model, $page);
     }
-    
-            
+
+
     /**
      * @title("新增医院表")
      * @param MyService $service
@@ -52,7 +59,7 @@ class Hospitals extends Admin
         return parent::create_($service, $model, $page, MyValidate::class);
     }
 
-            
+
     /**
      * @title("更新医院表")
      * @param MyService $service
@@ -64,10 +71,24 @@ class Hospitals extends Admin
      */
     public function update(MyService $service, MyModel $model, MyPage $page)
     {
-        return parent::update_($service, $model, $page, MyValidate::class);
+        if ($this->request->isPost()) {
+            $data = data_filter($this->request->post());
+
+            $this->validate($data, (MyValidate::class) . ".update");
+
+            $service->dataSave($data, $model);
+
+            return ResponseJson::success();
+        }
+
+        $data = $model->findOrEmpty($this->request->param('id', 0))->getData();
+        return view($page->form_template, [
+            'form' => $page->formPageData('update', $data)
+        ]);
     }
 
-            
+
+
     /**
      * @title("删除医院表")
      * @param MyService $service

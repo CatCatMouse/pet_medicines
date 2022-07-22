@@ -30,8 +30,10 @@ class Hospitals
                     return User::bindHospitalLists(['limit' => 99]);
                 case T::YISHENG:
                 case T::YIYUAN:
-                    $where[] = ['h.id', '=', request()->userInfo['hospital']];
+                    $where[] = ['h.id', '=', request()->userInfo['hospital_id']];
+
                     $where = array_reverse($where);
+
                     return Db::name(static::$table_name)->alias('h')->where($where)->field('id,name')->cache(random_int(30, 180))->select()->toArray();
                 case T::YOUKE:
                 default:
@@ -68,8 +70,8 @@ class Hospitals
         $field = 'a.id,a.user_id,a.user_name,d.name as department_name,a.create_time';
         $order = 'a.id desc';
         $lists = Db::name(static::$table_doctor_application_name)->alias('a')
-            ->join('departments d', 'a.department_id = d.id')
-            ->join('user u', 'a.user_id = u.id')
+            ->join('departments d', 'a.department_id = d.id', 'left')
+            ->join('user u', 'a.user_id = u.id', 'left')
             ->where($where)
             ->field($field)
             ->order($order)

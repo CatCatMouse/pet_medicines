@@ -10,8 +10,8 @@
 namespace app\api\controller;
 
 use app\common\controller\Api;
-use app\common\ResponseJson as RJ;
 use think\facade\Db;
+use app\common\ResponseJson as RJ;
 use think\response\Json as J;
 use app\api\model\User;
 

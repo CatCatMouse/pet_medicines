@@ -148,6 +148,7 @@ class Cases
         }
         $field = "
             c.id,c.name,c.create_time,c.desc,c.imgs,c.videos
+            ,c.age_year,c.age_month,c.case_type_id,c.case_subject_id,c.variety_id,c.sex
             ,if(cc.user_id = {$uid},true,false) as if_collection
             ,ifnull(ct.name, '') as type_name
             ,ifnull(cs.name, '') as subject_name
@@ -155,6 +156,9 @@ class Cases
             ,concat(c.age_year,'岁',if(c.age_month = 0,'',concat(c.age_month,'个月'))) as age
             ,if(c.sex=1,'公',if(c.sex=2,'母','未知')) as sex
             ,c.desc
+            ,(select name from sd_hospitals where id = c.hospital_id limit 1) as hospital_name
+            ,ifnull((select group_concat(doctor_name) from sd_case_doctors where case_id = c.id limit 1), '') as doctors
+            ,ifnull((select group_concat(doctor_id) from sd_case_doctors where case_id = c.id limit 1), '') as doctor_ids
         ";
 
         $detail = Db::name(static::$table_name)->alias('c')
@@ -170,6 +174,7 @@ class Cases
             $detail['imgs'] = array_filter(explode(',', $detail['imgs']));
             $detail['videos'] = array_filter(explode(',', $detail['videos'] ?? ''));
             $detail['operation_lists'] = CaseOperations::case_operations($detail['id']);
+            $detail['doctor_ids'] = array_filter(explode(',', $detail['doctor_ids']));
         }
 
         return $detail;
@@ -199,8 +204,8 @@ class Cases
                 'age_month' => intval($params['age_month'] ?? 0),
                 'sex' => $params['sex'] == 1 ? 1 : 2,
                 'desc' => $params['desc'],
-                'videos' => json_encode($params['videos'] ?? []),
-                'imgs' => json_encode($params['imgs'] ?? []),
+                'videos' => implode(',', $params['videos'] ?? []),
+                'imgs' => implode(',', $params['imgs'] ?? []),
                 'sale_id' => $sale_id,
                 'operate_id' => $uid,
                 'create_time' => date('Y-m-d H:i:s'),
@@ -263,8 +268,8 @@ class Cases
                 'age_month' => intval($params['age_month'] ?? 0),
                 'sex' => $params['sex'] == 1 ? 1 : 2,
                 'desc' => $params['desc'],
-                'videos' => json_encode($params['videos'] ?? []),
-                'imgs' => json_encode($params['imgs'] ?? []),
+                'videos' => implode(',',$params['videos'] ?? []),
+                'imgs' => implode(',',$params['imgs'] ?? []),
                 'update_time' => date('Y-m-d H:i:s'),
             ];
             if (!empty($sale_id)) {
@@ -282,7 +287,7 @@ class Cases
             }
 
             //修改病例
-            if(!Db::name(static::$table_name)->where($where)->update($update)) {
+            if (!Db::name(static::$table_name)->where($where)->update($update)) {
                 throw new Exception('系统繁忙');
             }
             //重新插入医师

@@ -34,7 +34,7 @@ class UserEnumType extends Enum
         return [
             self::YOUKE => Layui::tag()->black("游客"),
             self::XIAOSHOU => Layui::tag()->blue("销售"),
-            self::YISHENG => Layui::tag()->gray("医生"),
+            self::YISHENG => Layui::tag()->orange("医生"),
             self::YIYUAN => Layui::tag()->green("医院"),
         ];
     }

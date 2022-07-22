@@ -31,7 +31,7 @@ class FactoriesPage extends BasePage
     {
         $table = PageData::create([
             Column::checkbox(),
-            Column::normal('', 'id'),
+            Column::normal('ID', 'id'),
             Column::normal('厂商名称', 'name'),
             Column::normal('地址', 'address'),
             Column::normal('经度', 'lng'),
@@ -59,6 +59,8 @@ class FactoriesPage extends BasePage
         $unit = [
             FormUnit::hidden('id'),
             FormUnit::text('name', '厂商名称'),
+            FormUnit::text('lng', '经度')->defaultValue(0),
+            FormUnit::text('lat', '纬度')->defaultValue(0),
             FormUnit::text('address', '地址'),
             FormUnit::text('phone', '联系方式'),
             FormUnit::radio('status', '状态')->options(FactoriesEnumStatus::getMap(true)),

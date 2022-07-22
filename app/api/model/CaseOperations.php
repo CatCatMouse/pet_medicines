@@ -27,7 +27,7 @@ class CaseOperations
         ];
         $field = '
         co.id,co.case_id,co.name,co.start_time
-        ,(select group_concat(concat(apparatus_id,":",apparatus_name)) from sd_case_operation_apparatus_logs where operation_id = co.id limit 1) as apparatus
+        ,(select group_concat(concat(apparatus_id,":",apparatus_name,":",type)) from sd_case_operation_apparatus_logs where operation_id = co.id limit 1) as apparatus
         ';
         $order = 'co.id desc';
         $lists = Db::name(static::$table_name)->alias('co')
@@ -48,6 +48,7 @@ class CaseOperations
                 $v['apparatus'][$t[0]] = [
                     'id' => $t[0],
                     'name' => $t[1],
+                    'type' => $t[2],
                 ];
             }
         }
@@ -149,8 +150,8 @@ class CaseOperations
                 'name' => $params['name'],
                 'start_time' => $params['start_time'],
                 'info' => $params['info'],
-                'videos' => json_encode($params['videos'] ?? []),
-                'imgs' => json_encode($params['imgs'] ?? []),
+                'videos' => implode(',',$params['videos'] ?? []),
+                'imgs' => implode(',',$params['imgs'] ?? []),
                 'create_time' => $date,
             ];
             $id = Db::name(static::$table_detail_name)->insertGetId($insert);
@@ -187,8 +188,8 @@ class CaseOperations
                 'type' => $type,
                 'name' => $params['name'],
                 'info' => $params['info'],
-                'videos' => json_encode($params['videos'] ?? []),
-                'imgs' => json_encode($params['imgs'] ?? []),
+                'videos' => implode(',',$params['videos'] ?? []),
+                'imgs' => implode(',',$params['imgs'] ?? []),
                 'create_time' => $date,
             ];
             /** 术中开始时间 */
@@ -213,6 +214,7 @@ class CaseOperations
                         }
                     }
                     $operation_apparatus_inserts[] = [
+                        'operation_detail_id' => $id,
                         'case_id' => $params['case_id'],
                         'hospital_id' => $params['hospital_id'],
                         'operation_id' => $params['operation_id'],
@@ -281,8 +283,8 @@ class CaseOperations
                 'name' => $params['name'],
                 'start_time' => $params['start_time'],
                 'info' => $params['info'],
-                'videos' => json_encode($params['videos'] ?? []),
-                'imgs' => json_encode($params['imgs'] ?? []),
+                'videos' => implode(',',$params['videos'] ?? []),
+                'imgs' => implode(',',$params['imgs'] ?? []),
                 'create_time' => $date,
             ];
             $id = Db::name(static::$table_detail_name)->insertGetId($insert);
@@ -311,8 +313,8 @@ class CaseOperations
                 'name' => $params['name'],
                 'start_time' => $params['start_time'],
                 'info' => $params['info'],
-                'videos' => json_encode($params['videos'] ?? []),
-                'imgs' => json_encode($params['imgs'] ?? []),
+                'videos' => implode(',',$params['videos'] ?? []),
+                'imgs' => implode(',',$params['imgs'] ?? []),
                 'update_time' => $date,
             ];
             $where = [
@@ -351,8 +353,8 @@ class CaseOperations
             $update = [
                 'name' => $params['name'],
                 'info' => $params['info'],
-                'videos' => json_encode($params['videos'] ?? []),
-                'imgs' => json_encode($params['imgs'] ?? []),
+                'videos' => implode(',',$params['videos'] ?? []),
+                'imgs' => implode(',',$params['imgs'] ?? []),
                 'update_time' => $date,
             ];
             /** 术中开始时间 */
@@ -385,6 +387,7 @@ class CaseOperations
                         }
                     }
                     $operation_apparatus_inserts[] = [
+                        'operation_detail_id' => $id,
                         'case_id' => $params['case_id'],
                         'hospital_id' => $params['hospital_id'],
                         'operation_id' => $params['operation_id'],
@@ -428,8 +431,8 @@ class CaseOperations
                 'name' => $params['name'],
                 'start_time' => $params['start_time'],
                 'info' => $params['info'],
-                'videos' => json_encode($params['videos'] ?? []),
-                'imgs' => json_encode($params['imgs'] ?? []),
+                'videos' => implode(',',$params['videos'] ?? []),
+                'imgs' => implode(',', $params['imgs'] ?? []),
                 'update_time' => $date,
             ];
             $where = [

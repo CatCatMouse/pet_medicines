@@ -26,7 +26,7 @@ class UserService extends AdminBaseService
      */
     public function listData(BackstageListsService $service): \think\response\Json
     {
-        $model = MyModel::field('i.id,i.pid,i.type type_true,i.type,i.nickname,i.name,i.phone,i.avatar,i.account,i.id_card,i.wx_openid,i.invite_code,i.zfb_user_id,i.vip_level,i.balance,i.integral,i.email,i.status status_true,i.status,i.create_time,i.update_time,i.delete_time')
+        $model = MyModel::field('i.id,i.pid,i.type type_true,i.type,i.type as type_id,i.nickname,i.name,i.phone,i.avatar,i.account,i.id_card,i.wx_openid,i.invite_code,i.zfb_user_id,i.vip_level,i.balance,i.integral,i.email,i.status status_true,i.status,i.create_time,i.update_time,i.delete_time')
             ;
 
         return $service->setModel($model)->getListsData();

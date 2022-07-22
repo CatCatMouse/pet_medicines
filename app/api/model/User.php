@@ -270,7 +270,7 @@ class User
             ->select()
             ->toArray();
         foreach ($lists as &$v) {
-            $v['imgs'] = explode(',', $v['imgs']);
+            $v['imgs'] = array_filter(explode(',', $v['imgs']));
         }
         return $lists;
     }

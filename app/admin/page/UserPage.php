@@ -7,6 +7,8 @@
 namespace app\admin\page;
 
 use app\common\BasePage;
+use app\common\model\Factories;
+use app\common\model\Hospitals;
 use sdModule\layui\lists\module\Column;
 use sdModule\layui\lists\module\EventHandle;
 use sdModule\layui\lists\PageData;
@@ -14,6 +16,7 @@ use sdModule\layui\form4\FormProxy as Form;
 use sdModule\layui\form4\FormUnit;
 use app\common\enum\UserEnumType;
 use app\common\enum\UserEnumStatus;
+use think\facade\Db;
 
 
 /**
@@ -33,58 +36,41 @@ class UserPage extends BasePage
         $table = PageData::create([
             Column::checkbox(),
             Column::normal('ID', 'id'),
-            Column::normal('上级', 'pid'),
-            Column::normal('权限类型', 'type'),
-            Column::normal('昵称', 'nickname'),
+            Column::normal('角色', 'type'),
             Column::normal('姓名', 'name'),
-            Column::normal('手机号', 'phone'),
-            Column::normal('头像', 'avatar')->showImage(),
-            Column::normal('账号', 'account'),
-            Column::normal('身份证号', 'id_card'),
+            Column::normal('微信昵称', 'nickname'),
+            Column::normal('微信手机号', 'phone'),
+            Column::normal('微信头像', 'avatar')->showImage(),
             Column::normal('微信openid', 'wx_openid'),
-            Column::normal('邀请码', 'invite_code'),
-            Column::normal('支付宝user_id', 'zfb_user_id'),
-            Column::normal('会员等级', 'vip_level'),
-            Column::normal('余额，分', 'balance'),
-            Column::normal('积分', 'integral'),
-            Column::normal('邮箱', 'email'),
             Column::normal('状态', 'status'),
-            Column::normal('创建时间', 'create_time'),
-            Column::normal('修改时间', 'update_time'),
-            Column::normal('删除时间', 'delete_time'),
+            Column::normal('注册时间', 'create_time'),
         ]);
 
         // 更多处理事件及其他设置，$table->setHandleAttr() 可设置操作栏的属性
-
+        $table->removeBarEvent(['delete', 'create']);
+        $table->addEvent()->setNormalBtn('设为销售')->setJs(EventHandle::openPage([url('set_sale'), 'id'], '设为销售')->popUps())->setWhere('d.type_id == 1');
         return $table;
     }
 
     /**
-    * 生成表单的数据
-    * @param string $scene
-    * @param array $default_data
-    * @return Form
-    */
+     * 生成表单的数据
+     * @param string $scene
+     * @param array $default_data
+     * @return Form
+     */
     public function formPageData(string $scene, array $default_data = []): Form
     {
         $unit = [
             FormUnit::hidden('id'),
-            FormUnit::select('pid', '上级'),
-            FormUnit::select('type', '权限类型')->options(UserEnumType::getMap(true)),
+            FormUnit::select('type', '角色')->options(UserEnumType::getMap(true))->inputAttr('-', [
+                'disabled' => true
+            ]),
             FormUnit::text('nickname', '昵称'),
             FormUnit::text('name', '姓名'),
             FormUnit::text('phone', '手机号'),
-            FormUnit::password('password', '密码'),
-            FormUnit::image('avatar', '头像'),
-            FormUnit::text('account', '账号'),
-            FormUnit::text('id_card', '身份证号'),
-            FormUnit::text('wx_openid', '微信openid'),
-            FormUnit::text('invite_code', '邀请码'),
-            FormUnit::text('zfb_user_id', '支付宝user_id'),
-            FormUnit::radio('vip_level', '会员等级'),
-            FormUnit::text('balance', '余额，分'),
-            FormUnit::text('integral', '积分'),
-            FormUnit::text('email', '邮箱'),
+            FormUnit::text('wx_openid', '微信openid')->inputAttr('-', [
+                'disabled' => true
+            ]),
             FormUnit::radio('status', '状态')->options(UserEnumStatus::getMap(true)),
         ];
 
@@ -102,14 +88,49 @@ class UserPage extends BasePage
     {
         $form_data = [
             FormUnit::group(
-                FormUnit::select('i.type')->placeholder('权限类型')->options(UserEnumType::getMap(true)),
+                FormUnit::select('i.type')->placeholder('角色')->options(UserEnumType::getMap(true)),
                 FormUnit::text('i.name%%')->placeholder('姓名'),
                 FormUnit::text('i.phone%%')->placeholder('手机号'),
             ),
         ];
-        
+
         return Form::create($form_data)->setSearchSubmitElement();
     }
 
 
+    /**
+     * 生成表单的数据
+     * @param string $scene
+     * @param array $default_data
+     * @return Form
+     */
+    public function setSale(string $scene, array $default_data = []): Form
+    {
+        $factories = Factories::column('name', 'id');
+        $hospitals = Hospitals::column('name', 'id');
+        $unit = [
+            FormUnit::hidden('id'),
+            FormUnit::select('type', '角色')->options(UserEnumType::getMap(true))->inputAttr('-', [
+                'disabled' => true
+            ]),
+            FormUnit::text('nickname', '昵称')->inputAttr('-', [
+                'disabled' => true
+            ]),
+            FormUnit::text('name', '姓名')->inputAttr('-', [
+                'disabled' => true
+            ]),
+            FormUnit::text('phone', '手机号')->inputAttr('-', [
+                'disabled' => true
+            ]),
+            !empty($default_data['factory_id'])
+                ? FormUnit::select('factory_id', '所属厂商')->options($factories)->inputAttr('-', ['disabled' => true])->required()
+                : FormUnit::select('factory_id', '所属厂商')->options($factories)->required(),
+            FormUnit::selects('hospital_ids', '负责医院')->options($hospitals)->required()
+        ];
+
+
+        $form = Form::create($unit, $default_data)->setScene($scene);
+
+        return $form;
+    }
 }

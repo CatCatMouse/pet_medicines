@@ -44,7 +44,10 @@ class CasesPage extends BasePage
             Column::normal('品种', 'varieties_name'),
             Column::normal('年龄', 'age_year')->setFormat('{age_year}岁{age_month}个月'),
             Column::normal('性别', 'sex'),
-            Column::normal('图片', 'imgs')->setTemplate('return custom.tableImageShow(obj.imgs.split(",")[0]);'),
+            Column::normal('图片', 'imgs')->setTemplate(<<<Js
+                return obj.imgs?custom.tableImageShow(obj.imgs.split(",")[0]): '';
+ Js
+            ),
             Column::normal('销售人', 'sale_name'),
             Column::normal('操作人', 'operate_name'),
             Column::normal('创建时间', 'create_time'),
@@ -58,11 +61,11 @@ class CasesPage extends BasePage
     }
 
     /**
-    * 生成表单的数据
-    * @param string $scene
-    * @param array $default_data
-    * @return Form
-    */
+     * 生成表单的数据
+     * @param string $scene
+     * @param array $default_data
+     * @return Form
+     */
     public function formPageData(string $scene, array $default_data = []): Form
     {
         $unit = [
@@ -102,7 +105,7 @@ class CasesPage extends BasePage
                 FormUnit::text('i.name%%')->placeholder('名称'),
             ),
         ];
-        
+
         return Form::create($form_data)->setSearchSubmitElement();
     }
 

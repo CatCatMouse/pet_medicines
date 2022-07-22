@@ -74,3 +74,9 @@ Route::rule('hospitals', 'Hospital/map_list', 'POST'); /** 科目 @see \app\api\
 
 /** 医院申请页配置 */
 Route::rule('doctor_apply_configs', 'User/doctorApplyConfig', 'POST'); /** 医生审核列表 @see \app\api\controller\User::doctorApplyConfig() */
+
+
+/** 上传相关 */
+/** 获取token */
+Route::rule('get_upload_token', 'Upload/getToken', 'POST'); /** 获取上传token @see \app\api\controller\Upload::getToken() */
+Route::rule('upload', 'Upload/upload', 'POST'); /** 获取上传token @see \app\api\controller\Upload::upload() */

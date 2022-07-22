@@ -31,7 +31,7 @@ class ApparatusesEnumIsTop extends Enum
         // TODO 常量名字取的拼音，需要请更改为对应英语
         return [
             self::YES => Layui::tag()->green("推荐"),
-            self::NO => Layui::tag()->red(""),
+            self::NO => Layui::tag()->gray("否"),
         ];
     }
 
