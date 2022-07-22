@@ -5,7 +5,10 @@ namespace app;
 
 
 use app\admin\model\system\Resource;
+use app\api\controller\Upload;
+use app\common\ResponseJson as RJ;
 use OSS\Core\OssException;
+use QiNiuYun\QNOss as Oss;
 use sdModule\common\Sc;
 use sdModule\image\Image;
 use think\facade\App;
@@ -133,7 +136,24 @@ class SystemUpload
      */
     public function imageUpload()
     {
-        return $this->localhostUpload($this->fileVerify('limit_image'));
+        if (env('UPLOAD_TYPE', '') == 'QNY') {
+            $file = request()->file('limit_images');
+            if (is_null($file)) {
+                return RJ::fail('请上传文件');
+            }
+
+            if (is_array($file)) {
+                return RJ::fail('只支持单文件上传');
+            }
+
+            $filePath = $file->getPath() . DIRECTORY_SEPARATOR .$file->getFilename();
+
+            $res = Oss::uploadFile($filePath, $file->getOriginalName());
+
+            return ResponseJson::success($res);
+        } else {
+            return $this->localhostUpload($this->fileVerify('limit_image'));
+        }
     }
 
     /**
@@ -144,6 +164,23 @@ class SystemUpload
      */
     public function fileUpload()
     {
+        if (env('UPLOAD_TYPE', '') == 'QNY') {
+            $file = request()->file('file');
+            if (is_null($file)) {
+                return RJ::fail('请上传文件');
+            }
+
+            if (is_array($file)) {
+                return RJ::fail('只支持单文件上传');
+            }
+
+            $filePath = $file->getPath() . DIRECTORY_SEPARATOR .$file->getFilename();
+
+            $res = Oss::uploadFile($filePath, $file->getOriginalName());
+
+            return ResponseJson::success($res);
+        }
+
         return $this->localhostUpload($this->fileVerify());
     }
 

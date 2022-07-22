@@ -85,11 +85,9 @@ class CaseOperations
                 $v['operation_apparatuses'] = [];
                 foreach (array_filter(explode('***', $operation_apparatuses)) as $v1) {
                     $operation_apparatus = array_filter(explode('@@@', $v1));
-
                     $v['operation_apparatuses'][] = [
-                        'apparatus_id' => $operation_apparatus[0] ?? 0,
-                        'apparatus_name' => $operation_apparatus[1] ?? '',
-                        'apparatus_type' => $operation_apparatus[2] ?? 2,
+                        'id' => (($operation_apparatus[2] ?? 2) == 2)?0:($operation_apparatus[0]??0),
+                        'name' => $operation_apparatus[1] ?? '',
                     ];
                 }
             }
@@ -116,7 +114,15 @@ class CaseOperations
         $detail['videos'] = array_filter(explode(',', $detail['videos'] ?? ''));
         $detail['operation_apparatuses'] = [];
         if ($detail['type'] == 2) {
-            $detail['operation_apparatuses'] = Db::name(static::$table_operation_apparatus_name)->where('operation_detail_id', $detail['id'])->select()->toArray();
+            $operation_apparatuses = Db::name(static::$table_operation_apparatus_name)->where('operation_detail_id', $detail['id'])->select()->toArray();
+            $apparatuses = [];
+            foreach ($operation_apparatuses as $operation_apparatus) {
+                $apparatuses[] = [
+                    'id' => ($operation_apparatus['apparatus_type'] == 2)?0:$operation_apparatus['apparatus_id'],
+                    'name' => $operation_apparatus['apparatus_name'],
+                ];
+            }
+            $detail['operation_apparatuses'] = $apparatuses;
         }
         return $detail;
     }
