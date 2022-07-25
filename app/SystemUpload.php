@@ -5,7 +5,6 @@ namespace app;
 
 
 use app\admin\model\system\Resource;
-use app\api\controller\Upload;
 use app\common\ResponseJson as RJ;
 use OSS\Core\OssException;
 use QiNiuYun\QNOss as Oss;

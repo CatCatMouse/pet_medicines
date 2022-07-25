@@ -79,8 +79,8 @@ class CasesPage extends BasePage
             FormUnit::text('age_month', '年龄月份'),
             FormUnit::radio('sex', '性别')->options(CasesEnumSex::getMap(true)),
             FormUnit::uEditor('desc', '描述'),
-            FormUnit::uEditor('videos', '视频'),
-            FormUnit::images('imgs', '图片'),
+            FormUnit::video('videos', '视频')->closeSystemResource(),
+            FormUnit::images('imgs', '图片')->closeSystemResource(),
 //            FormUnit::text('operate_id', '操作人id')->options(User::column('name', 'id')),
         ];
 
